@@ -7,6 +7,7 @@ import { IsAccess, AccessInput, BaseAccess } from '@certd/pipeline';
 @IsAccess({
   name: 'cloudflare',
   title: 'cloudflare授权',
+  icon: 'simple-icons:cloudflare',
   desc: '',
 })
 export class CloudflareAccess extends BaseAccess {

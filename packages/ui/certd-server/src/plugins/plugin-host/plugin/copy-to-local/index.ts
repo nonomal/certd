@@ -6,7 +6,7 @@ import path from 'path';
 
 @IsTaskPlugin({
   name: 'CopyToLocal',
-  title: '复制到本机',
+  title: '主机-复制到本机',
   icon: 'solar:copy-bold-duotone',
   desc: '【仅管理员使用】实际上是复制证书到docker容器内的某个路径，需要做目录映射到宿主机',
   group: pluginGroups.host.key,
@@ -18,11 +18,46 @@ import path from 'path';
 })
 export class CopyCertToLocalPlugin extends AbstractTaskPlugin {
   @TaskInput({
+    title: '域名证书',
+    helper: '请选择前置任务输出的域名证书',
+    component: {
+      name: 'output-selector',
+      from: ['CertApply', 'CertApplyLego'],
+    },
+    required: true,
+  })
+  cert!: CertInfo;
+
+  @TaskInput({
+    title: '证书类型',
+    helper: '要部署的证书格式，支持pem、pfx、der、jks格式',
+    component: {
+      name: 'a-select',
+      options: [
+        { value: 'pem', label: 'pem，用于Nginx等大部分应用' },
+        { value: 'pfx', label: 'pfx，一般用于IIS' },
+        { value: 'der', label: 'der，一般用于Apache' },
+        { value: 'jks', label: 'jks，一般用于JAVA应用' },
+      ],
+    },
+    required: true,
+  })
+  certType!: string;
+
+  @TaskInput({
     title: '证书保存路径',
     helper: '全链证书，路径要包含文件名' + '\n推荐使用相对路径，将写入与数据库同级目录，无需映射，例如：tmp/cert.pem',
     component: {
       placeholder: 'tmp/full_chain.pem',
     },
+    mergeScript: `
+      return {
+        show: ctx.compute(({form})=>{
+          return form.certType === 'pem';
+        })
+      }
+    `,
+    required: true,
     rules: [{ type: 'filepath' }],
   })
   crtPath!: string;
@@ -32,6 +67,14 @@ export class CopyCertToLocalPlugin extends AbstractTaskPlugin {
     component: {
       placeholder: 'tmp/cert.key',
     },
+    mergeScript: `
+      return {
+        show: ctx.compute(({form})=>{
+          return form.certType === 'pem';
+        })
+      }
+    `,
+    required: true,
     rules: [{ type: 'filepath' }],
   })
   keyPath!: string;
@@ -42,6 +85,13 @@ export class CopyCertToLocalPlugin extends AbstractTaskPlugin {
     component: {
       placeholder: '/root/deploy/nginx/intermediate.pem',
     },
+    mergeScript: `
+      return {
+        show: ctx.compute(({form})=>{
+          return form.certType === 'pem';
+        })
+      }
+    `,
     rules: [{ type: 'filepath' }],
   })
   icPath!: string;
@@ -52,6 +102,14 @@ export class CopyCertToLocalPlugin extends AbstractTaskPlugin {
     component: {
       placeholder: 'tmp/cert.pfx',
     },
+    mergeScript: `
+      return {
+        show: ctx.compute(({form})=>{
+          return form.certType === 'pfx';
+        })
+      }
+    `,
+    required: true,
     rules: [{ type: 'filepath' }],
   })
   pfxPath!: string;
@@ -63,30 +121,35 @@ export class CopyCertToLocalPlugin extends AbstractTaskPlugin {
     component: {
       placeholder: 'tmp/cert.der 或 tmp/cert.cer',
     },
+    mergeScript: `
+      return {
+        show: ctx.compute(({form})=>{
+          return form.certType === 'der';
+        })
+      }
+    `,
+    required: true,
     rules: [{ type: 'filepath' }],
   })
   derPath!: string;
 
-  // @TaskInput({
-  //   title: 'jks证书保存路径',
-  //   helper: '用于java，路径要包含文件名，例如：tmp/cert.jks',
-  //   component: {
-  //     placeholder: 'tmp/cert.jks',
-  //   },
-  //   rules: [{ type: 'filepath' }],
-  // })
-  jksPath!: string;
-
   @TaskInput({
-    title: '域名证书',
-    helper: '请选择前置任务输出的域名证书',
+    title: 'jks证书保存路径',
+    helper: '用于java，路径要包含文件名，例如：tmp/cert.jks',
     component: {
-      name: 'output-selector',
-      from: ['CertApply', 'CertApplyLego'],
+      placeholder: 'tmp/cert.jks',
     },
+    mergeScript: `
+      return {
+        show: ctx.compute(({form})=>{
+          return form.certType === 'jks';
+        })
+      }
+    `,
     required: true,
+    rules: [{ type: 'filepath' }],
   })
-  cert!: CertInfo;
+  jksPath!: string;
 
   @TaskOutput({
     title: '证书保存路径',
@@ -145,31 +208,37 @@ export class CopyCertToLocalPlugin extends AbstractTaskPlugin {
     const handle = async ({ reader, tmpCrtPath, tmpKeyPath, tmpDerPath, tmpPfxPath, tmpIcPath, tmpJksPath }) => {
       this.logger.info('复制到目标路径');
       if (crtPath) {
+        crtPath = crtPath.trim();
         crtPath = crtPath.startsWith('/') ? crtPath : path.join(Constants.dataDir, crtPath);
         this.copyFile(tmpCrtPath, crtPath);
         this.hostCrtPath = crtPath;
       }
       if (keyPath) {
+        keyPath = keyPath.trim();
         keyPath = keyPath.startsWith('/') ? keyPath : path.join(Constants.dataDir, keyPath);
         this.copyFile(tmpKeyPath, keyPath);
         this.hostKeyPath = keyPath;
       }
       if (icPath) {
+        icPath = icPath.trim();
         icPath = icPath.startsWith('/') ? icPath : path.join(Constants.dataDir, icPath);
         this.copyFile(tmpIcPath, icPath);
         this.hostIcPath = icPath;
       }
       if (pfxPath) {
+        pfxPath = pfxPath.trim();
         pfxPath = pfxPath.startsWith('/') ? pfxPath : path.join(Constants.dataDir, pfxPath);
         this.copyFile(tmpPfxPath, pfxPath);
         this.hostPfxPath = pfxPath;
       }
       if (derPath) {
+        derPath = derPath.trim();
         derPath = derPath.startsWith('/') ? derPath : path.join(Constants.dataDir, derPath);
         this.copyFile(tmpDerPath, derPath);
         this.hostDerPath = derPath;
       }
       if (jksPath) {
+        jksPath = jksPath.trim();
         jksPath = jksPath.startsWith('/') ? jksPath : path.join(Constants.dataDir, jksPath);
         this.copyFile(tmpJksPath, jksPath);
         this.hostJksPath = jksPath;

@@ -27,16 +27,7 @@ export const sysResources = [
           permission: "sys:auth:user:view"
         }
       },
-      {
-        title: "用户管理",
-        name: "UserManager",
-        path: "/sys/authority/user",
-        component: "/sys/authority/user/index.vue",
-        meta: {
-          icon: "ion:person-outline",
-          permission: "sys:auth:user:view"
-        }
-      },
+
       {
         title: "系统设置",
         name: "SysSettings",
@@ -58,7 +49,7 @@ export const sysResources = [
         }
       },
       {
-        title: "邮箱设置",
+        title: "邮件服务器设置",
         name: "EmailSetting",
         path: "/sys/settings/email",
         component: "/sys/settings/email/index.vue",
@@ -92,7 +83,7 @@ export const sysResources = [
             const settingStore = useSettingStore();
             return settingStore.isComm;
           },
-          icon: "ion:document-text-outline",
+          icon: "ion:menu",
           permission: "sys:settings:view"
         }
       },
@@ -168,35 +159,75 @@ export const sysResources = [
           icon: "ion:people-outline",
           permission: "sys:auth:role:view"
         }
-      }
+      },
+      {
+        title: "用户管理",
+        name: "UserManager",
+        path: "/sys/authority/user",
+        component: "/sys/authority/user/index.vue",
+        meta: {
+          icon: "ion:person-outline",
+          permission: "sys:auth:user:view"
+        }
+      },
 
-      // {
-      //   title: "商业版设置",
-      //   name: "SysCommercial",
-      //   meta: {
-      //     icon: "ion:document-text-outline",
-      //     permission: "sys:settings:view",
-      //     show: () => {
-      //       const settingStore = useSettingStore();
-      //       return settingStore.isComm;
-      //     }
-      //   },
-      //   children: [
-      //     {
-      //       title: "套餐设置",
-      //       name: "suite",
-      //       path: "/sys/commercial/suite",
-      //       meta: {
-      //         icon: "ion:document-text-outline",
-      //         permission: "sys:settings:view",
-      //         show: () => {
-      //           const settingStore = useSettingStore();
-      //           return settingStore.isComm;
-      //         }
-      //       }
-      //     }
-      //   ]
-      // }
+      {
+        title: "套餐管理",
+        name: "SuiteManager",
+        path: "/sys/suite",
+        meta: {
+          icon: "ion:cart-outline",
+          permission: "sys:settings:edit",
+          show: () => {
+            const settingStore = useSettingStore();
+            return settingStore.isComm;
+          }
+        },
+        children: [
+          {
+            title: "套餐设置",
+            name: "SuiteSetting",
+            path: "/sys/suite/setting",
+            component: "/sys/suite/setting/index.vue",
+            meta: {
+              show: () => {
+                const settingStore = useSettingStore();
+                return settingStore.isComm;
+              },
+              icon: "ion:cart",
+              permission: "sys:settings:edit"
+            }
+          },
+          {
+            title: "订单管理",
+            name: "OrderManager",
+            path: "/sys/suite/trade",
+            component: "/sys/suite/trade/index.vue",
+            meta: {
+              show: () => {
+                const settingStore = useSettingStore();
+                return settingStore.isComm;
+              },
+              icon: "ion:bag-check",
+              permission: "sys:settings:edit"
+            }
+          },
+          {
+            title: "用户套餐",
+            name: "UserSuites",
+            path: "/sys/suite/user-suite",
+            component: "/sys/suite/user-suite/index.vue",
+            meta: {
+              show: () => {
+                const settingStore = useSettingStore();
+                return settingStore.isComm;
+              },
+              icon: "ion:gift-outline",
+              auth: true
+            }
+          }
+        ]
+      }
     ]
   }
 ];

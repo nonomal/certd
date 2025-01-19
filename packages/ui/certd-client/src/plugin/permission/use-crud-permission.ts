@@ -1,5 +1,5 @@
 import { usePermission } from "/@/plugin/permission";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 
 export type UseCrudPermissionExtraProps = {
   hasActionPermission: (action: string) => boolean;

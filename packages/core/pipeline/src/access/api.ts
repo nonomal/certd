@@ -1,8 +1,16 @@
 import { Registrable } from "../registry/index.js";
 import { FormItemProps } from "../dt/index.js";
-import { HttpClient, ILogger, utils } from "../utils/index.js";
-import _ from "lodash-es";
-import { AccessRequestHandleReq } from "../core";
+import { HttpClient, ILogger, utils } from "@certd/basic";
+import * as _ from "lodash-es";
+import { PluginRequestHandleReq } from "../plugin/index.js";
+
+export type AccessRequestHandleReqInput<T = any> = {
+  id?: number;
+  title?: string;
+  access: T;
+};
+
+export type AccessRequestHandleReq<T = any> = PluginRequestHandleReq<AccessRequestHandleReqInput<T>>;
 
 export type AccessInputDefine = FormItemProps & {
   title: string;
@@ -10,6 +18,7 @@ export type AccessInputDefine = FormItemProps & {
   encrypt?: boolean;
 };
 export type AccessDefine = Registrable & {
+  icon?: string;
   input?: {
     [key: string]: AccessInputDefine;
   };
@@ -32,6 +41,10 @@ export type AccessContext = {
 
 export abstract class BaseAccess implements IAccess {
   ctx!: AccessContext;
+
+  setCtx(ctx: AccessContext) {
+    this.ctx = ctx;
+  }
 
   async onRequest(req: AccessRequestHandleReq) {
     if (!req.action) {

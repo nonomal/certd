@@ -1,11 +1,11 @@
 <template>
   <div class="access-selector">
-    <span v-if="target.name" class="mr-5 cd-flex-inline">
-      <a-tag class="mr-5" color="green">{{ target.name }}</a-tag>
+    <span v-if="modelValue" class="mr-5 cd-flex-inline">
+      <a-tag class="mr-5" color="green">{{ target?.name || modelValue }}</a-tag>
       <fs-icon class="cd-icon-button" icon="ion:close-circle-outline" @click="clear"></fs-icon>
     </span>
     <span v-else class="mlr-5 text-gray">{{ placeholder }}</span>
-    <a-button class="ml-5" :size="size" @click="chooseForm.open">选择</a-button>
+    <a-button class="ml-5" :disabled="disabled" :size="size" @click="chooseForm.open">选择</a-button>
     <a-form-item-rest v-if="chooseForm.show">
       <a-modal v-model:open="chooseForm.show" title="选择授权提供者" width="900px" @ok="chooseForm.ok">
         <div style="height: 400px; position: relative">
@@ -17,9 +17,10 @@
 </template>
 
 <script>
-import { defineComponent, reactive, ref, watch } from "vue";
+import { defineComponent, reactive, ref, watch, inject } from "vue";
 import CertAccessModal from "./access/index.vue";
 import { createAccessApi } from "../api";
+import { message } from "ant-design-vue";
 
 export default defineComponent({
   name: "AccessSelector",
@@ -44,9 +45,13 @@ export default defineComponent({
     from: {
       type: String, //user | sys
       default: "user"
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "change", "selectedChange"],
   setup(props, ctx) {
     const api = createAccessApi(props.from);
 
@@ -55,14 +60,32 @@ export default defineComponent({
     async function refreshTarget(value) {
       selectedId.value = value;
       if (value > 0) {
-        target.value = await api.GetObj(value);
+        target.value = await api.GetSimpleInfo(value);
       }
     }
 
     function clear() {
-      selectedId.value = "";
-      target.value = null;
+      if (props.disabled) {
+        return;
+      }
+      emitValue(null);
+    }
+
+    async function emitValue(value) {
+      if (pipeline?.value && target?.value && pipeline.value.userId !== target.value.userId) {
+        message.error("对不起，您不能修改他人流水线的授权");
+        return;
+      }
+      if (value == null) {
+        selectedId.value = "";
+        target.value = null;
+      } else {
+        selectedId.value = value;
+        await refreshTarget(selectedId.value);
+      }
+      ctx.emit("change", selectedId.value);
       ctx.emit("update:modelValue", selectedId.value);
+      ctx.emit("selectedChange", target.value);
     }
 
     watch(
@@ -71,7 +94,7 @@ export default defineComponent({
       },
       async (value) => {
         selectedId.value = null;
-        target.value = {};
+        target.value = null;
         if (value == null) {
           return;
         }
@@ -99,16 +122,18 @@ export default defineComponent({
       }
     );
 
+    //当不在pipeline中编辑时，可能为空
+    const pipeline = inject("pipeline", null);
+
     const chooseForm = reactive({
       show: false,
       open() {
         chooseForm.show = true;
       },
       ok: () => {
-        chooseForm.show = false;
         console.log("choose ok:", selectedId.value);
-        refreshTarget(selectedId.value);
-        ctx.emit("update:modelValue", selectedId.value);
+        emitValue(selectedId.value);
+        chooseForm.show = false;
       }
     });
 

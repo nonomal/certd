@@ -1,13 +1,13 @@
-import { Inject, Provide, Scope, ScopeEnum } from '@midwayjs/core';
+import { Provide, Scope, ScopeEnum } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import { SysSettingsEntity } from '../entity/sys-settings.js';
-import { CacheManager } from '@midwayjs/cache';
-import { BaseSettings, SysInstallInfo, SysPrivateSettings, SysPublicSettings, SysSecretBackup } from './models.js';
+import { BaseSettings, SysInstallInfo, SysPrivateSettings, SysPublicSettings, SysSecret, SysSecretBackup } from './models.js';
 import * as _ from 'lodash-es';
 import { BaseService } from '../../../basic/index.js';
-import { logger, setGlobalProxy } from '@certd/basic';
-import { agents } from '@certd/acme-client';
+import { cache, logger, setGlobalProxy } from '@certd/basic';
+import * as dns from 'node:dns';
+
 /**
  * 设置
  */
@@ -16,9 +16,6 @@ import { agents } from '@certd/acme-client';
 export class SysSettingsService extends BaseService<SysSettingsEntity> {
   @InjectEntityModel(SysSettingsEntity)
   repository: Repository<SysSettingsEntity>;
-
-  @Inject()
-  cache: CacheManager; // 依赖注入CacheManager
 
   getRepository() {
     return this.repository;
@@ -72,7 +69,7 @@ export class SysSettingsService extends BaseService<SysSettingsEntity> {
   async getSetting<T>(type: any): Promise<T> {
     const key = type.__key__;
     const cacheKey = type.getCacheKey();
-    const settings: T = await this.cache.get(cacheKey);
+    const settings: T = cache.get(cacheKey);
     if (settings) {
       return settings;
     }
@@ -80,7 +77,7 @@ export class SysSettingsService extends BaseService<SysSettingsEntity> {
     const savedSettings = await this.getSettingByKey(key);
     newSetting = _.merge(newSetting, savedSettings);
     await this.saveSetting(newSetting);
-    await this.cache.set(cacheKey, newSetting);
+    cache.set(cacheKey, newSetting);
     return newSetting;
   }
 
@@ -93,6 +90,12 @@ export class SysSettingsService extends BaseService<SysSettingsEntity> {
     if (entity) {
       entity.setting = JSON.stringify(bean);
       entity.access = type.__access__;
+
+      if (key === SysSecretBackup.__key__) {
+        //备份密钥不允许更新
+        return;
+      }
+
       await this.repository.save(entity);
     } else {
       const newEntity = new SysSettingsEntity();
@@ -103,7 +106,7 @@ export class SysSettingsService extends BaseService<SysSettingsEntity> {
       await this.repository.save(newEntity);
     }
 
-    await this.cache.set(cacheKey, bean);
+    cache.set(cacheKey, bean);
   }
 
   async getPublicSettings(): Promise<SysPublicSettings> {
@@ -132,7 +135,10 @@ export class SysSettingsService extends BaseService<SysSettingsEntity> {
       httpsProxy: bean.httpsProxy,
     };
     setGlobalProxy(opts);
-    agents.setGlobalProxy(opts);
+
+    if (bean.dnsResultOrder) {
+      dns.setDefaultResultOrder(bean.dnsResultOrder as any);
+    }
   }
 
   async updateByKey(key: string, setting: any) {
@@ -143,7 +149,7 @@ export class SysSettingsService extends BaseService<SysSettingsEntity> {
     } else {
       throw new Error('该设置不存在');
     }
-    await this.cache.del(`settings.${key}`);
+    cache.delete(`settings.${key}`);
   }
 
   async backupSecret() {
@@ -169,5 +175,21 @@ export class SysSettingsService extends BaseService<SysSettingsEntity> {
         throw new Error('encryptSecret与备份不一致，可能是数据异常，请检查');
       }
     }
+  }
+  async getSecret() {
+    const sysSecret = await this.getSetting<SysSecret>(SysSecret);
+    if (sysSecret.encryptSecret) {
+      return sysSecret;
+    }
+    //从备份中读取
+    const settings = await this.getSettingByKey(SysSecretBackup.__key__);
+    if (settings == null || !settings.encryptSecret) {
+      throw new Error('密钥备份不存在');
+    }
+    sysSecret.siteId = settings.siteId;
+    sysSecret.encryptSecret = settings.encryptSecret;
+    await this.saveSetting(sysSecret);
+    logger.info('密钥恢复成功');
+    return sysSecret;
   }
 }

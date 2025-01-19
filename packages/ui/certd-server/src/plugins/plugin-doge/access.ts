@@ -8,6 +8,7 @@ import { IsAccess, AccessInput, BaseAccess } from '@certd/pipeline';
   name: 'dogecloud',
   title: '多吉云',
   desc: '',
+  icon: 'svg:icon-dogecloud',
 })
 export class DogeCloudAccess extends BaseAccess {
   /**

@@ -4,6 +4,8 @@
 
 import { AxiosInstance } from 'axios';
 import * as rfc8555 from './rfc8555';
+import {CancelError} from '../src/error.js'
+export * from '../src/error.js'
 
 export type PrivateKeyBuffer = Buffer;
 export type PublicKeyBuffer = Buffer;
@@ -56,7 +58,7 @@ export interface ClientExternalAccountBindingOptions {
 
 export interface ClientAutoOptions {
     csr: CsrBuffer | CsrString;
-    challengeCreateFn: (authz: Authorization, challenge: rfc8555.Challenge, keyAuthorization: string) => Promise<{recordReq:any,recordRes:any,dnsProvider:any}>;
+    challengeCreateFn: (authz: Authorization, keyAuthorization: (challenge:rfc8555.Challenge)=>Promise<string>) => Promise<{recordReq?:any,recordRes?:any,dnsProvider?:any,challenge: rfc8555.Challenge,keyAuthorization:string}>;
     challengeRemoveFn: (authz: Authorization, challenge: rfc8555.Challenge, keyAuthorization: string,recordReq:any, recordRes:any,dnsProvider:any) => Promise<any>;
     email?: string;
     termsOfServiceAgreed?: boolean;
@@ -202,4 +204,4 @@ export function setLogger(fn: (message: any, ...args: any[]) => void): void;
 
 export function walkTxtRecord(record: any): Promise<string[]>;
 
-export const CancelError: Error;
+export const CancelError: typeof CancelError;

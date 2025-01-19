@@ -3,12 +3,12 @@ import { BaseService, PageReq } from '@certd/lib-server';
 import { PluginEntity } from '../entity/plugin.js';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
-import { isComm } from '@certd/pipeline';
+import { isComm } from '@certd/plus-core';
 import { BuiltInPluginService } from '../../pipeline/service/builtin-plugin-service.js';
 import { merge } from 'lodash-es';
 
 @Provide()
-@Scope(ScopeEnum.Singleton)
+@Scope(ScopeEnum.Request, { allowDowngrade: true })
 export class PluginService extends BaseService<PluginEntity> {
   @InjectEntityModel(PluginEntity)
   repository: Repository<PluginEntity>;
@@ -34,6 +34,13 @@ export class PluginService extends BaseService<PluginEntity> {
 
   async getEnabledBuildInGroup() {
     const groups = this.builtInPluginService.getGroups();
+    for (const key in groups) {
+      const group = groups[key];
+      group.plugins.forEach(item => {
+        delete item.input;
+      });
+    }
+
     if (!isComm()) {
       return groups;
     }
@@ -119,5 +126,9 @@ export class PluginService extends BaseService<PluginEntity> {
       return;
     }
     throw new Error('参数错误: id 和 name 必须有一个');
+  }
+
+  async getDefineByType(type: string) {
+    return this.builtInPluginService.getByType(type);
   }
 }

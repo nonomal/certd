@@ -25,7 +25,7 @@
 <script lang="ts">
 import i18n from "../../../i18n";
 import { computed, inject } from "vue";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 export default {
   name: "FsLocale",
   setup() {

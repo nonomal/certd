@@ -1,6 +1,6 @@
 import { Inject, Provide, Scope, ScopeEnum } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
-import { MoreThan, Repository } from 'typeorm';
+import { MoreThan, Not, Repository } from 'typeorm';
 import { UserEntity } from '../entity/user.js';
 import * as _ from 'lodash-es';
 import { BaseService, CommonException, Constants, FileService, SysInstallInfo, SysSettingsService } from '@certd/lib-server';
@@ -12,12 +12,14 @@ import bcrypt from 'bcryptjs';
 import { RandomUtil } from '../../../../utils/random.js';
 import dayjs from 'dayjs';
 import { DbAdapter } from '../../../db/index.js';
-import { utils } from '@certd/pipeline';
+import { simpleNanoId, utils } from '@certd/basic';
+
+export type RegisterType = 'username' | 'mobile' | 'email';
 /**
  * 系统用户
  */
 @Provide()
-@Scope(ScopeEnum.Singleton)
+@Scope(ScopeEnum.Request, { allowDowngrade: true })
 export class UserService extends BaseService<UserEntity> {
   @InjectEntityModel(UserEntity)
   repository: Repository<UserEntity>;
@@ -98,7 +100,18 @@ export class UserService extends BaseService<UserEntity> {
       throw new CommonException('用户不存在');
     }
 
-    delete param.username;
+    if (param.username) {
+      const username = param.username;
+      const id = param.id;
+      const old = await this.findOne([
+        { username: username, id: Not(id) },
+        { mobile: username, id: Not(id) },
+        { email: username, id: Not(id) },
+      ]);
+      if (old != null) {
+        throw new CommonException('用户名已被占用');
+      }
+    }
     if (!_.isEmpty(param.password)) {
       param.passwordVersion = 2;
       param.password = await this.genPassword(param.password, param.passwordVersion);
@@ -151,19 +164,44 @@ export class UserService extends BaseService<UserEntity> {
     return await this.roleService.getPermissionByRoleIds(roleIds);
   }
 
-  async register(user: UserEntity) {
-    const old = await this.findOne({ username: user.username });
-    if (old != null) {
-      throw new CommonException('用户名已经存在');
+  async register(type: string, user: UserEntity) {
+    if (!user.password) {
+      user.password = simpleNanoId();
     }
+    if (!user.username) {
+      user.username = 'user_' + simpleNanoId();
+    }
+
+    if (type === 'username') {
+      const username = user.username;
+      const old = await this.findOne([{ username: username }, { mobile: username }, { email: username }]);
+      if (old != null) {
+        throw new CommonException('用户名已被注册');
+      }
+    } else if (type === 'mobile') {
+      const mobile = user.mobile;
+
+      user.nickName = mobile.substring(0, 3) + '****' + mobile.substring(7);
+      const old = await this.findOne([{ username: mobile }, { mobile: mobile }, { email: mobile }]);
+      if (old != null) {
+        throw new CommonException('手机号已被注册');
+      }
+    } else if (type === 'email') {
+      const email = user.email;
+      const old = await this.findOne([{ username: email }, { mobile: email }, { email: email }]);
+      if (old != null) {
+        throw new CommonException('邮箱已被注册');
+      }
+    }
+
     let newUser: UserEntity = UserEntity.of({
       username: user.username,
       password: user.password,
-      nickName: user.nickName || user.username,
-      avatar: user.avatar || '',
       email: user.email || '',
       mobile: user.mobile || '',
-      phoneCode: user.phoneCode || '',
+      nickName: user.nickName || user.username,
+      avatar: user.avatar || '',
+      phoneCode: user.phoneCode || '86',
       status: 1,
       passwordVersion: 2,
     });
@@ -179,6 +217,9 @@ export class UserService extends BaseService<UserEntity> {
     });
 
     delete newUser.password;
+
+    utils.mitter.emit('register', { userId: newUser.id });
+
     return newUser;
   }
 

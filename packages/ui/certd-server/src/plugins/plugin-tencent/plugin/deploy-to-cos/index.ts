@@ -1,12 +1,11 @@
-import { IsTaskPlugin, pluginGroups, RunStrategy, TaskInput } from '@certd/pipeline';
+import { AbstractTaskPlugin, IsTaskPlugin, pluginGroups, RunStrategy, TaskInput } from '@certd/pipeline';
 import { CertInfo } from '@certd/plugin-cert';
-import { AbstractPlusTaskPlugin, createRemoteSelectInputDefine } from '@certd/plugin-plus';
-import { TencentSslClient } from '../../lib/index.js';
+import { createRemoteSelectInputDefine, TencentSslClient } from '@certd/plugin-lib';
 
 @IsTaskPlugin({
   name: 'DeployCertToTencentCosPlugin',
-  title: '部署证书到腾讯云COS',
-  needPlus: true,
+  title: '腾讯云-部署证书到COS',
+  needPlus: false,
   icon: 'svg:icon-tencentcloud',
   group: pluginGroups.tencent.key,
   desc: '部署到腾讯云COS源站域名证书【注意：很不稳定，需要重试很多次偶尔才能成功一次】',
@@ -16,7 +15,7 @@ import { TencentSslClient } from '../../lib/index.js';
     },
   },
 })
-export class DeployCertToTencentCosPlugin extends AbstractPlusTaskPlugin {
+export class DeployCertToTencentCosPlugin extends AbstractTaskPlugin {
   /**
    * AccessProvider的id
    */

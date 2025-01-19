@@ -2,7 +2,7 @@ import path from 'path';
 import * as _ from 'lodash-es';
 import yaml from 'js-yaml';
 import fs from 'fs';
-import { logger } from '@certd/pipeline';
+import { logger } from '@certd/basic';
 
 function parseEnv(defaultConfig: any) {
   const config = {};
@@ -45,4 +45,15 @@ export function mergeConfig(config: any, envType: string) {
     config.keys = keys;
   }
   return config;
+}
+
+export function loadDotEnv() {
+  const envStr = fs.readFileSync('.env').toString();
+  envStr.split('\n').forEach(line => {
+    const [key, value] = line.trim().split('=');
+    const oldValue = process.env[key];
+    if (!oldValue) {
+      process.env[key] = value;
+    }
+  });
 }

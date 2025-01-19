@@ -153,7 +153,7 @@ export default function ({ crudExpose, context }: CreateCrudOptionsProps): Creat
         },
         icon: {
           title: "图标",
-          type: "text",
+          type: "icon",
           column: {
             width: 300,
             cellRender: ({ row }) => {
@@ -163,18 +163,6 @@ export default function ({ crudExpose, context }: CreateCrudOptionsProps): Creat
           form: {
             component: {
               placeholder: "ion:add-circle"
-            },
-            helper: {
-              render: () => {
-                return (
-                  <span>
-                    <a href="https://icon-sets.iconify.design/" target="_blank">
-                      图标库
-                    </a>
-                    <span>--搜索--选择图标--复制名称--填到这里</span>
-                  </span>
-                );
-              }
             }
           }
         },

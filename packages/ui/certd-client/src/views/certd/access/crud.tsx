@@ -37,11 +37,6 @@ export default function ({ crudExpose, context }: CreateCrudOptionsProps): Creat
         editRequest,
         delRequest
       },
-      form: {
-        labelCol: {
-          span: 6
-        }
-      },
       rowHandle: {
         width: 200
       },

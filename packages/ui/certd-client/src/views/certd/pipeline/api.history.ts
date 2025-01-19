@@ -10,11 +10,10 @@ export async function GetList(query: any) {
     data: query
   });
   for (const item of list) {
-    if (item.pipeline) {
+    if (item.pipeline && typeof item.pipeline === "string") {
       item.pipeline = JSON.parse(item.pipeline);
     }
   }
-  console.log("history", list);
   return list;
 }
 

@@ -26,7 +26,7 @@
 
 <script lang="ts">
 import { utils } from "@fast-crud/fast-crud";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 import { computed, defineComponent, ref } from "vue";
 
 export default defineComponent({

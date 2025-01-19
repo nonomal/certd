@@ -1,14 +1,14 @@
 /**
  * acme-client
  */
-
-exports.Client = require('./client');
+import AcmeClinet  from './client.js'
+export const Client = AcmeClinet
 
 /**
  * Directory URLs
  */
 
-exports.directory = {
+export const directory = {
     buypass: {
         staging: 'https://api.test4.buypass.no/acme/directory',
         production: 'https://api.buypass.com/acme/directory',
@@ -31,21 +31,18 @@ exports.directory = {
  * Crypto
  */
 
-exports.crypto = require('./crypto');
-exports.forge = require('./crypto/forge');
+export * as crypto from './crypto/index.js'
+export * as forge from './crypto/forge.js'
 
 /**
  * Axios
  */
 
-exports.axios = require('./axios');
-exports.agents = require('./agents');
-
+export *  from './axios.js'
 /**
  * Logger
  */
 
-exports.setLogger = require('./logger').setLogger;
-
-exports.walkTxtRecord = require('./verify').walkTxtRecord;
-exports.CancelError = require('./error').CancelError;
+export * from './logger.js'
+export * from './verify.js'
+export * from './error.js'

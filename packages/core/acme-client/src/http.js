@@ -1,11 +1,11 @@
 /**
  * ACME HTTP client
  */
-
-const { createHmac, createSign, constants: { RSA_PKCS1_PADDING } } = require('crypto');
-const { getJwk } = require('./crypto');
-const { log } = require('./logger');
-const axios = require('./axios');
+import { createHmac, createSign, constants } from 'crypto';
+const { RSA_PKCS1_PADDING } = constants;
+import axios from './axios.js';
+import { log } from './logger.js';
+import { getJwk } from './crypto/index.js';
 
 /**
  * ACME HTTP client
@@ -324,4 +324,4 @@ class HttpClient {
 }
 
 /* Export client */
-module.exports = HttpClient;
+export default HttpClient;

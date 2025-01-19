@@ -6,3 +6,4 @@ export * from './upload-to-tencent/index.js';
 export * from './deploy-to-cos/index.js';
 export * from './deploy-to-eo/index.js';
 export * from './delete-expiring-cert/index.js';
+export * from './deploy-to-tke-ingress/index.js';

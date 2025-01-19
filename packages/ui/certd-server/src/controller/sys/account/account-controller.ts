@@ -1,8 +1,5 @@
 import { ALL, Body, Controller, Inject, Post, Provide } from '@midwayjs/core';
-import { BaseController, PlusService } from '@certd/lib-server';
-import { AppKey } from '@certd/pipeline';
-import { SysSettingsService } from '@certd/lib-server';
-import { SysInstallInfo } from '@certd/lib-server';
+import { BaseController, PlusService, SysInstallInfo, SysSettingsService } from '@certd/lib-server';
 
 export type PreBindUserReq = {
   userId: number;
@@ -23,18 +20,8 @@ export class BasicController extends BaseController {
 
   @Post('/preBindUser', { summary: 'sys:settings:edit' })
   public async preBindUser(@Body(ALL) body: PreBindUserReq) {
-    const installInfo: SysInstallInfo = await this.sysSettingsService.getSetting(SysInstallInfo);
     // 设置缓存内容
-    await this.plusService.requestWithoutSign({
-      url: '/activation/subject/preBind',
-      method: 'POST',
-      data: {
-        userId: body.userId,
-        appKey: AppKey,
-        subjectId: installInfo.siteId,
-      },
-    });
-
+    await this.plusService.userPreBind(body.userId);
     return this.ok({});
   }
 

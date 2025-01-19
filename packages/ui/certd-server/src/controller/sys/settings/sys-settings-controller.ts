@@ -1,10 +1,13 @@
 import { ALL, Body, Controller, Inject, Post, Provide, Query } from '@midwayjs/core';
 import { CrudController, SysPrivateSettings, SysPublicSettings, SysSettingsEntity, SysSettingsService } from '@certd/lib-server';
 import * as _ from 'lodash-es';
+import { merge } from 'lodash-es';
 import { PipelineService } from '../../../modules/pipeline/service/pipeline-service.js';
 import { UserSettingsService } from '../../../modules/mine/service/user-settings-service.js';
 import { getEmailSettings } from '../../../modules/sys/settings/fix.js';
-import { http, logger } from '@certd/pipeline';
+import { http, logger, simpleNanoId } from '@certd/basic';
+import { CodeService } from '../../../modules/basic/service/code-service.js';
+import { SmsServiceFactory } from '../../../modules/basic/sms/factory.js';
 
 /**
  */
@@ -17,6 +20,8 @@ export class SysSettingsController extends CrudController<SysSettingsService> {
   userSettingsService: UserSettingsService;
   @Inject()
   pipelineService: PipelineService;
+  @Inject()
+  codeService: CodeService;
 
   getService() {
     return this.service;
@@ -24,20 +29,16 @@ export class SysSettingsController extends CrudController<SysSettingsService> {
 
   @Post('/page', { summary: 'sys:settings:view' })
   async page(@Body(ALL) body) {
-    body.query = body.query ?? {};
-    body.query.userId = this.getUserId();
     return super.page(body);
   }
 
   @Post('/list', { summary: 'sys:settings:view' })
   async list(@Body(ALL) body) {
-    body.userId = this.getUserId();
     return super.list(body);
   }
 
   @Post('/add', { summary: 'sys:settings:edit' })
   async add(@Body(ALL) bean) {
-    bean.userId = this.getUserId();
     return super.add(bean);
   }
 
@@ -77,6 +78,14 @@ export class SysSettingsController extends CrudController<SysSettingsService> {
     return this.ok(conf);
   }
 
+  @Post('/saveEmailSettings', { summary: 'sys:settings:edit' })
+  async saveEmailSettings(@Body(ALL) body) {
+    const conf = await getEmailSettings(this.service, this.userSettingsService);
+    merge(conf, body);
+    await this.service.saveSetting(conf);
+    return this.ok(conf);
+  }
+
   @Post('/getSysSettings', { summary: 'sys:settings:edit' })
   async getSysSettings() {
     const publicSettings = await this.service.getPublicSettings();
@@ -102,7 +111,7 @@ export class SysSettingsController extends CrudController<SysSettingsService> {
     return this.ok({});
   }
 
-  @Post('/testProxy', { summary: 'sys:settings:view' })
+  @Post('/testProxy', { summary: 'sys:settings:edit' })
   async testProxy(@Body(ALL) body) {
     const google = 'https://www.google.com/';
     const baidu = 'https://www.baidu.com/';
@@ -138,5 +147,16 @@ export class SysSettingsController extends CrudController<SysSettingsService> {
       google: googleRes,
       baidu: baiduRes,
     });
+  }
+
+  @Post('/testSms', { summary: 'sys:settings:edit' })
+  async testSms(@Body(ALL) body) {
+    await this.codeService.sendSmsCode(body.phoneCode, body.mobile, simpleNanoId());
+    return this.ok({});
+  }
+
+  @Post('/getSmsTypeDefine', { summary: 'sys:settings:view' })
+  async getSmsTypeDefine(@Body('type') type: string) {
+    return this.ok(SmsServiceFactory.getDefine(type));
   }
 }

@@ -1,7 +1,6 @@
 import { HistoryResult, Pipeline, ResultType, Runnable, RunnableMap, Stage, Step, Task } from "../dt/index.js";
-import _ from "lodash-es";
-import { buildLogger } from "../utils/index.js";
-import { Logger } from "log4js";
+import * as _ from "lodash-es";
+import { buildLogger, ILogger } from "@certd/basic";
 
 export type HistoryStatus = {
   result: HistoryResult;
@@ -19,13 +18,13 @@ export function NewRunHistory(obj: any) {
   return history;
 }
 export class RunHistory {
-  id!: string;
+  id!: any;
   pipeline!: Pipeline;
   logs: {
     [runnableId: string]: string[];
   } = {};
   _loggers: {
-    [runnableId: string]: Logger;
+    [runnableId: string]: ILogger;
   } = {};
   trigger!: RunTrigger;
 
@@ -117,10 +116,14 @@ export class RunHistory {
   }
 
   logError(runnable: Runnable, e: Error) {
+    const { cause, stack } = e;
     delete e.stack;
     delete e.cause;
-    const errorInfo = runnable.runnableType === "step" ? e : e.message;
-    this._loggers[runnable.id].error(`[${runnable.runnableType}] [${runnable.title}]<id:${runnable.id}> ：`, errorInfo);
+    if (runnable.runnableType === "step") {
+      this._loggers[runnable.id].error(`[${runnable.runnableType}] [${runnable.title}]<id:${runnable.id}> ：`, e, stack, cause);
+    } else {
+      this._loggers[runnable.id].error(`[${runnable.runnableType}] [${runnable.title}]<id:${runnable.id}> ：`, e.message);
+    }
   }
 
   finally(runnable: Runnable) {
@@ -131,6 +134,7 @@ export class RunHistory {
 export class RunnableCollection {
   private collection: RunnableMap = {};
   private pipeline!: Pipeline;
+  currentStep!: Step;
   constructor(pipeline?: Pipeline) {
     if (!pipeline) {
       return;
@@ -138,6 +142,23 @@ export class RunnableCollection {
     this.pipeline = pipeline;
     const map = this.toMap(pipeline);
     this.collection = map;
+  }
+
+  static initPipelineRunnableType(pipeline: Pipeline) {
+    pipeline.runnableType = "pipeline";
+    if (pipeline.stages === undefined) {
+      pipeline.stages = [];
+      return;
+    }
+    pipeline.stages.forEach((stage) => {
+      stage.runnableType = "stage";
+      stage.tasks.forEach((task) => {
+        task.runnableType = "task";
+        task.steps.forEach((step) => {
+          step.runnableType = "step";
+        });
+      });
+    });
   }
 
   static each<T extends Runnable>(list: T[], exec: (item: Runnable) => void) {
@@ -190,5 +211,8 @@ export class RunnableCollection {
 
   add(runnable: Runnable) {
     this.collection[runnable.id] = runnable;
+    if (runnable.runnableType === "step") {
+      this.currentStep = runnable as Step;
+    }
   }
 }

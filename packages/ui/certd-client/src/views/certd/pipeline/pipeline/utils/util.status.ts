@@ -5,6 +5,7 @@ export type StatusEnumItem = {
   icon: string;
   spin?: boolean;
   iconSpin?: boolean;
+  iconColor?: string;
 };
 export type StatusEnumType = {
   [key: string]: StatusEnumItem;
@@ -54,6 +55,12 @@ const StatusEnum: StatusEnumType = {
   disabled: {
     value: "disabled",
     label: "禁用",
+    color: "gray",
+    icon: "ant-design:stop-outlined"
+  },
+  no_deploy_count: {
+    value: "no_deploy_count",
+    label: "次数不足",
     color: "gray",
     icon: "ant-design:stop-outlined"
   }

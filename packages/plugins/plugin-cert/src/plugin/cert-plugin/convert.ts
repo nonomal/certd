@@ -1,4 +1,4 @@
-import { ILogger, sp } from "@certd/pipeline";
+import { ILogger, sp } from "@certd/basic";
 import type { CertInfo } from "../cert-plugin/acme.js";
 import { CertReader, CertReaderHandleContext } from "../cert-plugin/cert-reader.js";
 import path from "path";
@@ -14,31 +14,31 @@ export class CertConverter {
   constructor(opts: { logger: ILogger }) {
     this.logger = opts.logger;
   }
-  async convert(opts: { cert: CertInfo; pfxPassword: string }): Promise<{
-    pfxPath: string;
-    derPath: string;
-    jksPath: string;
+  async convert(opts: { cert: CertInfo; pfxPassword: string; pfxArgs: string }): Promise<{
+    pfx: string;
+    der: string;
+    jks: string;
   }> {
     const certReader = new CertReader(opts.cert);
-    let pfxPath: string;
-    let derPath: string;
-    let jksPath: string;
+    let pfx: string;
+    let der: string;
+    let jks: string;
     const handle = async (ctx: CertReaderHandleContext) => {
       // 调用openssl 转pfx
-      pfxPath = await this.convertPfx(ctx, opts.pfxPassword);
+      pfx = await this.convertPfx(ctx, opts.pfxPassword, opts.pfxArgs);
 
       // 转der
-      derPath = await this.convertDer(ctx);
+      der = await this.convertDer(ctx);
 
-      //jksPath = await this.convertJks(ctx,  opts.pfxPassword);
+      jks = await this.convertJks(ctx, opts.pfxPassword);
     };
 
     await certReader.readCertFile({ logger: this.logger, handle });
 
     return {
-      pfxPath,
-      derPath,
-      jksPath,
+      pfx,
+      der,
+      jks,
     };
   }
 
@@ -50,7 +50,7 @@ export class CertConverter {
     });
   }
 
-  private async convertPfx(opts: CertReaderHandleContext, pfxPassword: string) {
+  private async convertPfx(opts: CertReaderHandleContext, pfxPassword: string, pfxArgs: string) {
     const { tmpCrtPath, tmpKeyPath } = opts;
 
     const pfxPath = path.join(os.tmpdir(), "/certd/tmp/", Math.floor(Math.random() * 1000000) + "_cert.pfx");
@@ -65,12 +65,14 @@ export class CertConverter {
       passwordArg = `-password pass:${pfxPassword}`;
     }
     // 兼容server 2016，旧版本不能用sha256
-    const oldPfxCmd = `openssl pkcs12 -macalg SHA1 -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -export -out ${pfxPath} -inkey ${tmpKeyPath} -in ${tmpCrtPath} ${passwordArg}`;
+    const oldPfxCmd = `openssl pkcs12 ${pfxArgs} -export -out ${pfxPath} -inkey ${tmpKeyPath} -in ${tmpCrtPath} ${passwordArg}`;
     // const newPfx = `openssl pkcs12 -export -out ${pfxPath} -inkey ${tmpKeyPath} -in ${tmpCrtPath} ${passwordArg}`;
     await this.exec(oldPfxCmd);
-    return pfxPath;
-    // const fileBuffer = fs.readFileSync(pfxPath);
-    // this.pfxCert = fileBuffer.toString("base64");
+    const fileBuffer = fs.readFileSync(pfxPath);
+    const pfxCert = fileBuffer.toString("base64");
+    fs.unlinkSync(pfxPath);
+    return pfxCert;
+
     //
     // const applyTime = new Date().getTime();
     // const filename = reader.buildCertFileName("pfx", applyTime);
@@ -87,15 +89,10 @@ export class CertConverter {
     }
 
     await this.exec(`openssl x509 -outform der -in ${tmpCrtPath} -out ${derPath}`);
-
-    return derPath;
-
-    // const fileBuffer = fs.readFileSync(derPath);
-    // this.derCert = fileBuffer.toString("base64");
-    //
-    // const applyTime = new Date().getTime();
-    // const filename = reader.buildCertFileName("der", applyTime);
-    // this.saveFile(filename, fileBuffer);
+    const fileBuffer = fs.readFileSync(derPath);
+    const derCert = fileBuffer.toString("base64");
+    fs.unlinkSync(derPath);
+    return derCert;
   }
 
   async convertJks(opts: CertReaderHandleContext, pfxPassword = "") {
@@ -106,8 +103,8 @@ export class CertConverter {
       const p12Path = path.join(os.tmpdir(), "/certd/tmp/", randomStr + `_cert.p12`);
       const { tmpCrtPath, tmpKeyPath } = opts;
       let passwordArg = "-passout pass:";
-      if (pfxPassword) {
-        passwordArg = `-password pass:${pfxPassword}`;
+      if (jksPassword) {
+        passwordArg = `-password pass:${jksPassword}`;
       }
       await this.exec(`openssl pkcs12 -export -in ${tmpCrtPath} -inkey ${tmpKeyPath} -out ${p12Path} -name certd ${passwordArg}`);
 
@@ -117,10 +114,14 @@ export class CertConverter {
         fs.mkdirSync(dir, { recursive: true });
       }
       await this.exec(
-        `keytool -importkeystore -srckeystore ${p12Path} -srcstoretype PKCS12 -srcstorepass "${pfxPassword}" -destkeystore ${jksPath} -deststoretype PKCS12 -deststorepass "${jksPassword}" `
+        `keytool -importkeystore -srckeystore ${p12Path} -srcstoretype PKCS12 -srcstorepass "${jksPassword}" -destkeystore ${jksPath} -deststoretype PKCS12 -deststorepass "${jksPassword}" `
       );
       fs.unlinkSync(p12Path);
-      return jksPath;
+
+      const fileBuffer = fs.readFileSync(jksPath);
+      const certBase64 = fileBuffer.toString("base64");
+      fs.unlinkSync(jksPath);
+      return certBase64;
     } catch (e) {
       this.logger.error("转换jks失败", e);
       return;

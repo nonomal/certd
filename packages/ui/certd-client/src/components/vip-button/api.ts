@@ -7,3 +7,11 @@ export async function doActive(form: any) {
     data: form
   });
 }
+
+export async function getVipTrial() {
+  return await request({
+    url: "/sys/plus/getVipTrial",
+    method: "post",
+    data: {}
+  });
+}

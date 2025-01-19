@@ -1,8 +1,8 @@
-import { fileUtils } from "../utils/index.js";
+import { fileUtils } from "@certd/basic";
 import dayjs from "dayjs";
 import path from "path";
 import fs from "fs";
-import { logger } from "../utils/index.js";
+import { logger } from "@certd/basic";
 
 export type FileStoreOptions = {
   rootDir?: string;

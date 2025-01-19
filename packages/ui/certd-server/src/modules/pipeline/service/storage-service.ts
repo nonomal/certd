@@ -7,7 +7,7 @@ import { StorageEntity } from '../entity/storage.js';
 /**
  */
 @Provide()
-@Scope(ScopeEnum.Singleton)
+@Scope(ScopeEnum.Request, { allowDowngrade: true })
 export class StorageService extends BaseService<StorageEntity> {
   @InjectEntityModel(StorageEntity)
   repository: Repository<StorageEntity>;

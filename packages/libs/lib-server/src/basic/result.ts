@@ -9,7 +9,7 @@ export class Result<T> {
   }
 
   static error(code = 1, msg) {
-    return new Result(code, msg, null);
+    return new Result(code, msg);
   }
 
   static success(msg, data?) {

@@ -24,10 +24,7 @@ defineOptions({
   name: "CnameVerifyPlan"
 });
 
-const emit = defineEmits<{
-  "update:modelValue": any;
-  change: Record<string, any>;
-}>();
+const emit = defineEmits(["update:modelValue", "change"]);
 
 const props = defineProps<{
   modelValue: Record<string, any>;

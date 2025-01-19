@@ -1,14 +1,11 @@
 /**
  * Axios instance
  */
-const axios = require('axios');
-const { parseRetryAfterHeader } = require('./util');
-const { log } = require('./logger');
-const pkg = require('./../package.json');
-const Agents = require('./agents');
-
+import axios from 'axios';
+import { parseRetryAfterHeader } from './util.js';
+import { log } from './logger.js';
 const { AxiosError } = axios;
-
+import {getGlobalAgents, HttpError} from '@certd/basic'
 /**
  * Defaults
  */
@@ -16,7 +13,7 @@ const { AxiosError } = axios;
 const instance = axios.create();
 
 /* Default User-Agent */
-instance.defaults.headers.common['User-Agent'] = `node-${pkg.name}/${pkg.version}`;
+instance.defaults.headers.common['User-Agent'] = `@certd/acme-client`;
 
 /* Default ACME settings */
 instance.defaults.acmeSettings = {
@@ -75,7 +72,7 @@ function validateStatus(response) {
         response,
     );
 
-    throw new Agents.HttpError(err);
+    throw new HttpError(err);
 }
 
 /* Pass all responses through the error interceptor */
@@ -85,7 +82,7 @@ instance.interceptors.request.use((config) => {
     }
     config.validateStatus = () => false;
 
-    const agents = Agents.getGlobalAgents();
+    const agents = getGlobalAgents();
     // if (config.skipSslVerify) {
     //     logger.info('跳过SSL验证');
     //     agents = createAgent({ rejectUnauthorized: false } as any);
@@ -102,7 +99,7 @@ instance.interceptors.response.use(null, async (error) => {
     const { config, response } = error;
 
     if (!config) {
-        return Promise.reject(new Agents.HttpError(error));
+        return Promise.reject(new HttpError(error));
     }
 
     /* Pick up errors we want to retry */
@@ -122,19 +119,20 @@ instance.interceptors.response.use(null, async (error) => {
                 const waitMinutes = (headerRetryAfter / 60).toFixed(1);
                 log(`Found retry-after response header with value: ${response.headers['retry-after']}, waiting ${waitMinutes} minutes`);
                 log(JSON.stringify(response.data));
-                return Promise.reject(new Agents.HttpError(error));
+                return Promise.reject(new HttpError(error));
             }
 
             log(`waiting ${retryAfter} seconds`);
 
             /* Wait and retry the request */
             await new Promise((resolve) => { setTimeout(resolve, (retryAfter * 1000)); });
+            log(`Retrying request to URL ${config.url}`);
             return instance(config);
         }
     }
 
     if (!response) {
-        return Promise.reject(new Agents.HttpError(error));
+        return Promise.reject(new HttpError(error));
     }
     /* Validate and return response */
     return validateStatus(response);
@@ -144,4 +142,4 @@ instance.interceptors.response.use(null, async (error) => {
  * Export instance
  */
 
-module.exports = instance;
+export default instance;

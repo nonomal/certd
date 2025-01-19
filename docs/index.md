@@ -18,7 +18,7 @@ hero:
       link: /guide/tutorial.md
     - theme: alt
       text: demo体验
-      link: https://certd.handsfree.work
+      link: https://certd.handfree.work
 
 features:
   - title: 全自动申请证书
@@ -30,7 +30,7 @@ features:
   - title: 多证书格式支持
     details: 支持pem、pfx、der、jks等多种证书格式，支持Google、Letsencrypt、ZeroSSL证书颁发机构
   - title: 支持私有化部署
-    details: 保障数据安全
+    details: 授权数据加密存储，保障数据安全
   - title: 多数据库支持
-    details: 支持sqlite，postgresql数据库
+    details: 支持SQLite、Postgresql、MySQL数据库
 ---

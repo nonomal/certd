@@ -23,7 +23,6 @@ defineOptions({
   name: "FsUserInfo"
 });
 const userStore = useUserStore();
-console.log("user", userStore);
 const { t } = useI18n();
 
 const router = useRouter();

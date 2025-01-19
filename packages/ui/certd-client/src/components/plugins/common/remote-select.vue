@@ -42,6 +42,9 @@ const emit = defineEmits<{
 const attrs = useAttrs();
 
 const getCurrentPluginDefine: any = inject("getCurrentPluginDefine");
+const getScope: any = inject("get:scope");
+const getPluginType: any = inject("get:plugin:type");
+
 const optionsRef = ref([]);
 const message = ref("");
 const hasError = ref(false);
@@ -75,13 +78,16 @@ const getOptions = async () => {
   hasError.value = false;
   loading.value = true;
   optionsRef.value = [];
+  const { form } = getScope();
+  const pluginType = getPluginType();
+
   try {
     const res = await doRequest(
       {
-        type: props.type,
-        typeName: props.typeName,
+        type: pluginType,
+        typeName: form.type,
         action: props.action,
-        input: props.form
+        input: pluginType === "plugin" ? form.input : form
       },
       {
         onError(err: any) {

@@ -1,4 +1,4 @@
-import { logger } from '@certd/pipeline';
+import { logger } from '@certd/basic';
 import fs from 'fs';
 
 export async function getVersion() {

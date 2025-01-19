@@ -5,7 +5,7 @@
 > 申请证书->部署证书->设置定时执行->设置邮件通知
 
 ## 准备工作
-1. 已部署CertD服务（可官方Demo自助注册体验 https://certd.handsfree.work/ ）
+1. 已部署CertD服务（可官方Demo自助注册体验 https://certd.handfree.work/ ）
 2. 注册一个域名（支持阿里云万网、腾讯云DnsPod、华为云）
 3. 准备好以上DNS解析服务商的AccessKey 和 AccessSecret
 4. 证书要部署的目标（可选，单纯当成证书申请工具用也不错）
@@ -18,12 +18,9 @@
 需要添加域名的DNS解析服务商的授权
 ![添加域名的DNS解析服务商的授权](packages/ui/certd-client/public/static/doc/images/2-access-provider.png)
 
-填写accessKey和accessSecret
-![](packages/ui/certd-client/public/static/doc/images/3-add-access.png)
 流水线创建成功
-![](packages/ui/certd-client/public/static/doc/images/4-add-success.png)
 
-### 2. 任务详情界面
+### 2. 流水线详情界面
 
 ![](packages/ui/certd-client/public/static/doc/images/5-view.png)
 
@@ -92,7 +89,7 @@
 ### 7. 定时触发
 配置定时触发，以后每天定时执行    
 cron格式，例如： `0 0 3 * * *` 表示每天凌晨3点执行     
-到期前20天会自动申请新证书并部署，没到期前不会重复申请    
+到期前35天会自动申请新证书并部署，没到期前不会重复申请    
 ![](packages/ui/certd-client/public/static/doc/images/14-timer.png)
 
 ### 8. 邮件通知

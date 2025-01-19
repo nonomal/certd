@@ -14,12 +14,12 @@ export async function GetLatestVersion() {
     return latest;
   }
   const res = await request({
-    url: "https://registry.npmmirror.com/@certd/pipeline",
+    url: "/app/latest",
     method: "GET",
-    unpack: false
+    unpack: true
   });
   try {
-    const latest = res["dist-tags"].latest;
+    const latest = res;
     LocalStorage.set("latestVersion", latest, 60 * 60 * 24);
     return latest;
   } catch (e: any) {

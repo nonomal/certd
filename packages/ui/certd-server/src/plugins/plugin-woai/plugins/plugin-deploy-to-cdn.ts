@@ -1,10 +1,10 @@
-import { AbstractTaskPlugin, HttpClient, IsTaskPlugin, pluginGroups, RunStrategy, TaskInput } from '@certd/pipeline';
+import { AbstractTaskPlugin, IsTaskPlugin, pluginGroups, RunStrategy, TaskInput } from '@certd/pipeline';
 import { CertInfo } from '@certd/plugin-cert';
 import { WoaiAccess } from '../access.js';
 
 @IsTaskPlugin({
   name: 'WoaiCDN',
-  title: '部署证书到我爱云 CDN',
+  title: '我爱云-部署证书到我爱云CDN',
   desc: '部署证书到我爱云CDN',
   icon: 'clarity:plugin-line',
   group: pluginGroups.cdn.key,
@@ -42,12 +42,9 @@ export class WoaiCdnPlugin extends AbstractTaskPlugin {
     required: true,
   })
   accessId!: string;
-  http!: HttpClient;
   private readonly baseApi = 'https://console.edeg.51vs.club';
 
-  async onInstance() {
-    this.http = this.ctx.http;
-  }
+  async onInstance() {}
 
   private async doRequestApi(url: string, data: any = null, method = 'post', token: string | null = null) {
     const headers = {

@@ -29,3 +29,5 @@ test/**/*.js
 /packages/ui/certd-server/data/db.sqlite
 /packages/ui/certd-server/data/keys.yaml
 /packages/pro/
+
+test.js

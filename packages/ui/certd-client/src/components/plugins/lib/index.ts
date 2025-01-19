@@ -1,9 +1,9 @@
 import { request } from "/@/api/service";
 export type ComponentPropsType = {
-  type: string;
-  typeName: string;
-  action?: string;
-  form: any;
+  type?: string;
+  typeName?: string;
+  action: string;
+  form?: any;
   value?: any;
 };
 export type RequestHandleReq<T = any> = {
@@ -15,7 +15,7 @@ export type RequestHandleReq<T = any> = {
 };
 
 export async function doRequest(req: RequestHandleReq, opts: any = {}) {
-  const url = req.type === "access" ? "/pi/handle/access" : "/pi/handle/plugin";
+  const url = `/pi/handle/${req.type}`;
   const { typeName, action, data, input } = req;
   const res = await request({
     url,

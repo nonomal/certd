@@ -3,7 +3,7 @@ import { AbstractPlusTaskPlugin } from '@certd/plugin-plus';
 
 @IsTaskPlugin({
   name: 'DeployCertToTencentAll',
-  title: '部署证书到腾讯云任意云资源',
+  title: '腾讯云-部署证书到任意云资源',
   needPlus: true,
   icon: 'svg:icon-tencentcloud',
   group: pluginGroups.tencent.key,

@@ -38,27 +38,11 @@ admin/123456
 登录后请及时修改密码
 
 ## 三、如何升级
+宝塔升级certd非常简单
 
-### 1. 应用商店安装，直接更新镜像即可
-
+`docker`->`容器编排`->`左侧选择Certd`->`更新镜像`
 ![img.png](./images/upgrade.png)
 
-
-### 2. latest更新方式
-在主机上拉取最新镜像，然后面板上重启容器
-```shell
-docker pull registry.cn-shenzhen.aliyuncs.com/handsfree/certd:latest
-```
-
-### 3. 固定版本号方式
-
-修改容器编排模版中的镜像版本号，然后面板上重启容器
-```shell
-services:
-  certd:
-    # 镜像                                #  修改最新版本号  ---- ↓↓↓↓↓ 
-    image: registry.cn-shenzhen.aliyuncs.com/handsfree/certd:v1.xx.x
-```
 
 ## 四、数据备份
 
@@ -81,4 +65,4 @@ services:
 
 ## 五、备份恢复
 
-将备份的`db.sqlite`覆盖到原来的位置即可
+将备份的`db.sqlite`及同目录下的其他文件一起覆盖到原来的位置，重启certd即可

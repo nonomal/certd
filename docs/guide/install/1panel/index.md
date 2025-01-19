@@ -31,15 +31,12 @@ admin/123456
 
 ## 三、升级
 
-1. 找到容器，点击编辑
-   ![](./images/edit1.png)
+1. 找到容器，点击更多->升级
+   ![](./images/upgrade-1.png)
 
-2. 将latest修改为最新版本号
-   ![](https://img.shields.io/npm/v/%40certd%2Fpipeline)
+2. 选择强制拉取镜像，点击确认即可
+![img.png](./images/upgrade-2.png)
 
-![img.png](./images/edit2.png)
-
-3. 点击确定，重启容器
 
 ## 四、数据备份
 
@@ -48,4 +45,4 @@ admin/123456
 
 ## 五、备份恢复
 
-将备份的`db.sqlite`覆盖到原来的位置即可
+将备份的`db.sqlite`及同目录下的其他文件一起覆盖到原来的位置，重启certd即可

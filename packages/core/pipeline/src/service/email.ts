@@ -1,5 +1,4 @@
 export type EmailSend = {
-  userId: number;
   subject: string;
   content: string;
   receivers: string[];

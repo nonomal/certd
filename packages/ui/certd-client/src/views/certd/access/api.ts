@@ -43,6 +43,14 @@ export function createAccessApi(from = "user") {
       });
     },
 
+    async GetSimpleInfo(id: number) {
+      return await request({
+        url: apiPrefix + "/simpleInfo",
+        method: "post",
+        params: { id }
+      });
+    },
+
     async GetSecretPlain(id: number, key: string) {
       return await request({
         url: apiPrefix + "/getSecretPlain",

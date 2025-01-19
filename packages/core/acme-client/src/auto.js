@@ -1,11 +1,11 @@
 /**
  * ACME auto helper
  */
+import { readCsrDomains } from './crypto/index.js';
+import { log } from './logger.js';
+import { wait } from './wait.js';
+import { CancelError } from './error.js';
 
-const { readCsrDomains } = require('./crypto');
-const { log } = require('./logger');
-const { wait } = require('./wait');
-const { CancelError } = require('./error');
 
 const defaultOpts = {
     csr: null,
@@ -30,7 +30,7 @@ const defaultOpts = {
  * @returns {Promise<buffer>} Certificate
  */
 
-module.exports = async (client, userOpts) => {
+export default  async (client, userOpts) => {
     const opts = { ...defaultOpts, ...userOpts };
     const accountPayload = { termsOfServiceAgreed: opts.termsOfServiceAgreed };
 
@@ -99,31 +99,14 @@ module.exports = async (client, userOpts) => {
             return;
         }
 
+        const keyAuthorizationGetter = async (challenge) => {
+            return await client.getChallengeKeyAuthorization(challenge);
+        }
+
         try {
-            /* Select challenge based on priority */
-            const challenge = authz.challenges.sort((a, b) => {
-                const aidx = opts.challengePriority.indexOf(a.type);
-                const bidx = opts.challengePriority.indexOf(b.type);
-
-                if (aidx === -1) return 1;
-                if (bidx === -1) return -1;
-                return aidx - bidx;
-            }).slice(0, 1)[0];
-
-            if (!challenge) {
-                throw new Error(`Unable to select challenge for ${d}, no challenge found`);
-            }
-
-            log(`[auto] [${d}] Found ${authz.challenges.length} challenges, selected type: ${challenge.type}`);
-
-            /* Trigger challengeCreateFn() */
             log(`[auto] [${d}] Trigger challengeCreateFn()`);
-            const keyAuthorization = await client.getChallengeKeyAuthorization(challenge);
-
             try {
-                const { recordReq, recordRes, dnsProvider } = await opts.challengeCreateFn(authz, challenge, keyAuthorization);
-                log(`[auto] [${d}] challengeCreateFn success`);
-                log(`[auto] [${d}] add challengeRemoveFn()`);
+                const { recordReq, recordRes, dnsProvider,challenge ,keyAuthorization} = await opts.challengeCreateFn(authz, keyAuthorizationGetter);
                 clearTasks.push(async () => {
                     /* Trigger challengeRemoveFn(), suppress errors */
                     log(`[auto] [${d}] Trigger challengeRemoveFn()`);
@@ -141,7 +124,7 @@ module.exports = async (client, userOpts) => {
                     await wait(60 * 1000);
                 }
                 else {
-                    log(`[auto] [${d}] Running challenge verification`);
+                    log(`[auto] [${d}] Running challenge verification, type = ${challenge.type}`);
                     try {
                         await client.verifyChallenge(authz, challenge);
                     }

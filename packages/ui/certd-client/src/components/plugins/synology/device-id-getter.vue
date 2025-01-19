@@ -10,7 +10,7 @@
 </template>
 
 <script lang="tsx" setup>
-import { defineProps, ref, useAttrs } from "vue";
+import { defineProps, inject, ref, useAttrs } from "vue";
 import { Modal } from "ant-design-vue";
 import { ComponentPropsType, doRequest } from "/@/components/plugins/lib";
 
@@ -19,7 +19,6 @@ defineOptions({
 });
 
 const props = defineProps<ComponentPropsType>();
-
 const emit = defineEmits<{
   "update:value": any;
 }>();
@@ -27,16 +26,21 @@ const emit = defineEmits<{
 const attrs = useAttrs();
 
 const otpCodeRef = ref("");
+const getScope: any = inject("get:scope");
+const getPluginType: any = inject("get:plugin:type");
 
 async function loginWithOTPCode(otpCode: string) {
+  const { form } = getScope();
+  const pluginType = getPluginType();
+
   return await doRequest({
-    type: props.type,
-    typeName: props.typeName,
+    type: pluginType,
+    typeName: form.type,
     action: "LoginWithOPTCode",
     data: {
       otpCode
     },
-    input: props.form
+    input: form
   });
 }
 

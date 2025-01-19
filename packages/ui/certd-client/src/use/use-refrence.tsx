@@ -1,4 +1,4 @@
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 import { asyncCompute, compute } from "@fast-crud/fast-crud";
 import { computed } from "vue";
 

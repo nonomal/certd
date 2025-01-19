@@ -1,5 +1,5 @@
 // @ts-ignore
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 
 export class EnvConfig {
   MODE: string = import.meta.env.MODE;

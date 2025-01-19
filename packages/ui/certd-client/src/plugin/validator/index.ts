@@ -1,7 +1,7 @@
 import Validator from "async-validator";
 // 自定义验证器函数
 export function isDomain(rule: any, value: any) {
-  if (value == null) {
+  if (value == null || value == "") {
     return true;
   }
   let domains: string[] = value;

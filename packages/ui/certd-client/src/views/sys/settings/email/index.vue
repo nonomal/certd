@@ -2,22 +2,23 @@
   <fs-page class="page-setting-email">
     <template #header>
       <div class="title">
-        邮件设置
+        邮件服务器设置
         <span class="sub">设置邮件发送服务器</span>
       </div>
     </template>
 
     <div class="flex-o">
-      <div v-if="!formState.usePlus" class="email-form">
-        <a-form
-          :model="formState"
-          name="basic"
-          :label-col="{ span: 8 }"
-          :wrapper-col="{ span: 16 }"
-          autocomplete="off"
-          @finish="onFinish"
-          @finish-failed="onFinishFailed"
-        >
+      <a-form
+        :model="formState"
+        name="basic"
+        :label-col="{ span: 8 }"
+        :wrapper-col="{ span: 16 }"
+        autocomplete="off"
+        class="email-form-box"
+        @finish="onFinish"
+        @finish-failed="onFinishFailed"
+      >
+        <div v-if="!formState.usePlus" class="email-form">
           <a-form-item label="使用自定义邮件服务器"> </a-form-item>
           <a-form-item label="SMTP域名" name="host" :rules="[{ required: true, message: '请输入smtp域名或ip' }]">
             <a-input v-model:value="formState.host" />
@@ -41,32 +42,32 @@
             <a-switch v-model:checked="formState.secure" />
             <div class="helper">ssl和非ssl的smtp端口是不一样的，注意修改端口</div>
           </a-form-item>
-          <a-form-item label="忽略证书校验" name="tls.rejectUnauthorized">
+          <a-form-item label="忽略证书校验" :name="['tls', 'rejectUnauthorized']">
             <a-switch v-model:checked="formState.tls.rejectUnauthorized" />
           </a-form-item>
 
           <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
             <a-button type="primary" html-type="submit">保存</a-button>
           </a-form-item>
-        </a-form>
-      </div>
-      <div class="email-form">
-        <a-form :label-col="{ span: 8 }" :wrapper-col="{ span: 16 }">
-          <a-form-item label="使用官方邮件服务器">
+        </div>
+        <div class="email-form">
+          <a-form-item label="使用官方邮件服务器" name="usePlus">
             <div class="flex-o">
               <a-switch v-model:checked="formState.usePlus" :disabled="!settingStore.isPlus" @change="onUsePlusChanged" />
               <vip-button class="ml-5" mode="button"></vip-button>
             </div>
             <div class="helper">使用官方邮箱服务器直接发邮件，免除繁琐的配置</div>
           </a-form-item>
-        </a-form>
-      </div>
+        </div>
+      </a-form>
     </div>
     <div class="email-form">
       <a-form :model="testFormState" name="basic" :label-col="{ span: 8 }" :wrapper-col="{ span: 16 }" autocomplete="off" @finish="onTestSend">
         <a-form-item label="测试收件邮箱" name="receiver" :rules="[{ required: true, message: '请输入测试收件邮箱' }]">
           <a-input v-model:value="testFormState.receiver" />
-          <div class="helper">发送失败？？？可以试试使用官方邮件服务器↗↗↗↗↗↗↗↗</div>
+          <div class="helper">保存后再点击测试</div>
+          <div class="helper">发送失败？？？<a href="https://certd.docmirror.cn/guide/use/email/" target="_blank">邮件配置帮助文档</a></div>
+          <div class="helper">您还可以试试使用官方邮件服务器↗↗↗↗↗↗↗↗</div>
         </a-form-item>
         <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
           <a-button type="primary" :loading="testFormState.loading" html-type="submit">测试</a-button>
@@ -79,11 +80,11 @@
 <script setup lang="ts">
 import { reactive } from "vue";
 import * as api from "../api";
-import { SettingKeys } from "../api";
+import { EmailSettingsSave, SettingKeys } from "../api";
 import * as emailApi from "./api.email";
 import { notification } from "ant-design-vue";
 import { useSettingStore } from "/src/store/modules/settings";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 defineOptions({
   name: "EmailSetting"
 });
@@ -122,7 +123,7 @@ load();
 
 const onFinish = async (form: any) => {
   console.log("Success:", form);
-  await api.SettingsSave(SettingKeys.SysEmail, form);
+  await api.EmailSettingsSave(form);
   notification.success({
     message: "保存成功"
   });
@@ -133,7 +134,7 @@ const onFinishFailed = (errorInfo: any) => {
 };
 
 async function onUsePlusChanged() {
-  await api.SettingsSave(SettingKeys.SysEmail, formState);
+  await api.EmailSettingsSave(formState);
 }
 
 interface TestFormState {
@@ -161,6 +162,9 @@ const settingStore = useSettingStore();
 
 <style lang="less">
 .page-setting-email {
+  .email-form-box {
+    display: flex;
+  }
   .email-form {
     width: 500px;
     margin: 20px;

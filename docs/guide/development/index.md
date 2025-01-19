@@ -1,19 +1,18 @@
 # 本地开发
 欢迎贡献插件
 
-## 1.本地调试运行
+建议nodejs版本 `20.x` 及以上
+
+## 一、本地调试运行
 
 ### 克隆代码
 ```shell
 
 # 克隆代码
-git clone https://github.com/certd/certd
+git clone https://github.com/certd/certd --depth=1
 
 #进入项目目录
 cd certd
-
-# 切换到最新版本代码
-git checkout v1.26.7  # 这里换成最新版本号
 
 ```
 
@@ -55,7 +54,7 @@ npm run dev
 
 ```
 
-## 开发插件
+## 二、开发插件
 进入 `packages/ui/certd-server/src/plugins`
 
 ### 1.复制`plugin-demo`目录作为你的插件目录
@@ -89,8 +88,22 @@ export * from './plugins/plugin-deploy-to-xx'
 export * from "./plugin-cloudflare.js"
 ```
 
-## 重启服务进行调试
+### 6. 重启服务进行调试
 刷新浏览器，检查你的插件是否工作正常， 确保能够正常进行证书申请和部署
 
-## 提交PR
+## 三、提交PR
 我们将尽快审核PR
+
+## 四、 注意事项
+### 1.  如何让任务报错停止
+
+```js
+// 抛出异常即可使任务停止，否则会判定为成功
+throw new Error("错误信息")
+```
+
+
+## 五、贡献插件送激活码
+
+- PR要求，插件功能完整，代码规范
+- PR通过后，联系我们，送您一个半年期专业版激活码

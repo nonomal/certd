@@ -2,40 +2,41 @@ import { CertInfo } from "./acme.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { crypto } from "@certd/acme-client";
-import { ILogger } from "@certd/pipeline";
+import { CertificateInfo, crypto } from "@certd/acme-client";
+import { ILogger } from "@certd/basic";
 import dayjs from "dayjs";
 
 export type CertReaderHandleContext = {
   reader: CertReader;
   tmpCrtPath: string;
   tmpKeyPath: string;
+  tmpOcPath?: string;
   tmpPfxPath?: string;
   tmpDerPath?: string;
   tmpIcPath?: string;
   tmpJksPath?: string;
+  tmpOnePath?: string;
 };
 export type CertReaderHandle = (ctx: CertReaderHandleContext) => Promise<void>;
 export type HandleOpts = { logger: ILogger; handle: CertReaderHandle };
 export class CertReader {
   cert: CertInfo;
-  crt: string;
-  key: string;
-  csr: string;
-  ic: string; //中间证书
 
-  detail: any;
+  detail: CertificateInfo;
   expires: number;
   constructor(certInfo: CertInfo) {
     this.cert = certInfo;
-    this.crt = certInfo.crt;
-    this.key = certInfo.key;
-    this.csr = certInfo.csr;
 
-    this.ic = certInfo.ic;
-    if (!this.ic) {
-      this.ic = this.getIc();
-      this.cert.ic = this.ic;
+    if (!certInfo.ic) {
+      this.cert.ic = this.getIc();
+    }
+
+    if (!certInfo.oc) {
+      this.cert.oc = this.getOc();
+    }
+
+    if (!certInfo.one) {
+      this.cert.one = this.cert.crt + "\n" + this.cert.key;
     }
 
     const { detail, expires } = this.getCrtDetail(this.cert.crt);
@@ -46,14 +47,24 @@ export class CertReader {
   getIc() {
     //中间证书ic， 就是crt的第一个 -----END CERTIFICATE----- 之后的内容
     const endStr = "-----END CERTIFICATE-----";
-    const firstBlockEndIndex = this.crt.indexOf(endStr);
+    const firstBlockEndIndex = this.cert.crt.indexOf(endStr);
 
     const start = firstBlockEndIndex + endStr.length + 1;
-    if (this.crt.length <= start) {
+    if (this.cert.crt.length <= start) {
       return "";
     }
-    const ic = this.crt.substring(start);
-    return ic.trim();
+    const ic = this.cert.crt.substring(start);
+    if (ic == null) {
+      return "";
+    }
+    return ic?.trim();
+  }
+
+  getOc() {
+    //原始证书 就是crt的第一个 -----END CERTIFICATE----- 之前的内容
+    const endStr = "-----END CERTIFICATE-----";
+    const arr = this.cert.crt.split(endStr);
+    return arr[0] + endStr;
   }
 
   toCertInfo(): CertInfo {
@@ -61,6 +72,10 @@ export class CertReader {
   }
 
   getCrtDetail(crt: string = this.cert.crt) {
+    return CertReader.readCertDetail(crt);
+  }
+
+  static readCertDetail(crt: string) {
     const detail = crypto.readCertificateInfo(crt.toString());
     const expires = detail.notAfter;
     return { detail, expires };
@@ -73,7 +88,7 @@ export class CertReader {
     return domains;
   }
 
-  saveToFile(type: "crt" | "key" | "pfx" | "der" | "ic" | "jks", filepath?: string) {
+  saveToFile(type: "crt" | "key" | "pfx" | "der" | "oc" | "one" | "ic" | "jks", filepath?: string) {
     if (!this.cert[type]) {
       return;
     }
@@ -87,7 +102,7 @@ export class CertReader {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    if (type === "crt" || type === "key" || type === "ic") {
+    if (type === "crt" || type === "key" || type === "ic" || type === "oc" || type === "one") {
       fs.writeFileSync(filepath, this.cert[type]);
     } else {
       fs.writeFileSync(filepath, Buffer.from(this.cert[type], "base64"));
@@ -102,9 +117,11 @@ export class CertReader {
     const tmpKeyPath = this.saveToFile("key");
     const tmpPfxPath = this.saveToFile("pfx");
     const tmpIcPath = this.saveToFile("ic");
-    logger.info("本地文件写入成功");
+    const tmpOcPath = this.saveToFile("oc");
     const tmpDerPath = this.saveToFile("der");
     const tmpJksPath = this.saveToFile("jks");
+    const tmpOnePath = this.saveToFile("one");
+    logger.info("本地文件写入成功");
     try {
       return await opts.handle({
         reader: this,
@@ -114,12 +131,15 @@ export class CertReader {
         tmpDerPath: tmpDerPath,
         tmpIcPath: tmpIcPath,
         tmpJksPath: tmpJksPath,
+        tmpOcPath: tmpOcPath,
+        tmpOnePath,
       });
     } catch (err) {
+      logger.error("处理失败", err);
       throw err;
     } finally {
       //删除临时文件
-      logger.info("删除临时文件");
+      logger.info("清理临时文件");
       function removeFile(filepath?: string) {
         if (filepath) {
           fs.unlinkSync(filepath);
@@ -128,13 +148,15 @@ export class CertReader {
       removeFile(tmpCrtPath);
       removeFile(tmpKeyPath);
       removeFile(tmpPfxPath);
+      removeFile(tmpOcPath);
       removeFile(tmpDerPath);
       removeFile(tmpIcPath);
       removeFile(tmpJksPath);
+      removeFile(tmpOnePath);
     }
   }
 
-  buildCertFileName(suffix: string, applyTime: number, prefix = "cert") {
+  buildCertFileName(suffix: string, applyTime: any, prefix = "cert") {
     const detail = this.getCrtDetail();
     let domain = detail.detail.domains.commonName;
     domain = domain.replace(".", "_").replace("*", "_");

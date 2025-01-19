@@ -1,11 +1,14 @@
 # 源码部署
-
+不推荐
 ## 一、源码安装
+
+### 环境要求
+- nodejs 20 及以上
 ### 源码启动
 ```shell
 # 克隆代码
 git clone https://github.com/certd/certd
-# git checkout v1.x.x  # 1.x.x换成最新版本号，当v2主干分支代码无法正常启动时，可以尝试此命令
+# git checkout v1.x.x  # 当v2主干分支代码无法正常启动时，可以尝试此命令，1.x.x换成最新版本号
 cd certd
 # 启动服务
 ./start.sh  
@@ -26,9 +29,15 @@ https://your_server_ip:7002
 ## 二、升级
 
 ```shell
-# 更新代码并启动
+
 cd certd
+# 确保数据安全，备份一下数据
+cp -rf ./packages/ui/certd-server/data ../certd-data-backup
+
 git pull
+# 如果提示pull失败，可以尝试强制更新
+# git checkout v2 -f && git pull 
+
 # 先停止旧的服务,7001是certd的默认端口
 kill -9 $(lsof -t -i:7001)
 # 重新编译启动
@@ -42,4 +51,4 @@ kill -9 $(lsof -t -i:7001)
 
 ## 四、备份恢复
 
-将备份的`db.sqlite`覆盖到原来的位置即可
+将备份的`db.sqlite`及同目录下的其他文件覆盖到原来的位置，重启certd即可

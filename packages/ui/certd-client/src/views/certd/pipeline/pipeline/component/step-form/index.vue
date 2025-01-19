@@ -1,5 +1,5 @@
 <template>
-  <a-drawer v-model:open="stepDrawerVisible" placement="right" :closable="true" width="700px" class="step-form-drawer" :class="{ fullscreen }">
+  <a-drawer v-model:open="stepDrawerVisible" placement="right" :closable="true" width="760px" class="step-form-drawer" :class="{ fullscreen }">
     <template #title>
       <div>
         编辑步骤
@@ -48,7 +48,7 @@
                     <a-card-meta>
                       <template #title>
                         <fs-icon class="plugin-icon" :icon="item.icon || 'clarity:plugin-line'"></fs-icon>
-                        <span class="title">{{ item.title }}</span>
+                        <span class="title" :title="item.title">{{ item.title }}</span>
                         <vip-button v-if="item.needPlus" mode="icon" />
                       </template>
                       <template #description>
@@ -86,13 +86,13 @@
                 },
                 rules: [{ required: true, message: '此项必填' }]
               }"
-              :get-context-fn="blankFn"
+              :get-context-fn="getScopeFunc"
             />
             <template v-for="(item, key) in currentPlugin.input" :key="key">
-              <fs-form-item v-if="item.show !== false" v-model="currentStep.input[key]" :item="item" :get-context-fn="blankFn" />
+              <fs-form-item v-if="item.show !== false" v-model="currentStep.input[key]" :item="item" :get-context-fn="getScopeFunc" />
             </template>
 
-            <fs-form-item v-model="currentStep.strategy.runStrategy" :item="runStrategyProps" :get-context-fn="blankFn" />
+            <fs-form-item v-model="currentStep.strategy.runStrategy" :item="runStrategyProps" :get-context-fn="getScopeFunc" />
           </a-form>
         </div>
         <template #footer>
@@ -108,7 +108,7 @@
 <script lang="tsx">
 import { message, Modal } from "ant-design-vue";
 import { computed, inject, Ref, ref, watch, provide } from "vue";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 import { nanoid } from "nanoid";
 import { CopyOutlined } from "@ant-design/icons-vue";
 import { PluginGroups } from "/@/views/certd/pipeline/pipeline/type";
@@ -222,6 +222,9 @@ export default {
       provide("getCurrentPluginDefine", () => {
         return currentPluginDefine;
       });
+      provide("get:plugin:type", () => {
+        return "plugin";
+      });
 
       function getContext() {
         return {
@@ -230,19 +233,19 @@ export default {
       }
       const { doComputed } = useCompute();
       const currentPlugin = doComputed(() => {
-        return currentPluginDefine.value;
+        return currentPluginDefine.value || {};
       }, getContext);
       const changeCurrentPlugin = async (step: any) => {
         const stepType = step.type;
         step.type = stepType;
         step._isAdd = false;
-
-        let pluginDefine = pluginGroups.get(stepType);
+        const pluginDefine = await pluginApi.GetPluginDefine(stepType);
+        // let pluginDefine = pluginGroups.get(stepType);
         if (pluginDefine == null) {
           console.log("插件未找到", stepType);
           return;
         }
-        pluginDefine = _.cloneDeep(pluginDefine);
+        // pluginDefine = _.cloneDeep(pluginDefine);
         const columns = pluginDefine.input;
         for (let key in columns) {
           const column = columns[key];
@@ -302,8 +305,10 @@ export default {
         stepDrawerClose();
       };
 
-      const blankFn = () => {
-        return {};
+      const getScopeFunc = () => {
+        return {
+          form: currentStep.value
+        };
       };
 
       const pluginSearch = ref({
@@ -359,7 +364,7 @@ export default {
         stepSave,
         stepDelete,
         rules,
-        blankFn,
+        getScopeFunc,
         stepCopy,
         fullscreen
       };

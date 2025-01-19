@@ -4,6 +4,7 @@ import { AccessInput, BaseAccess, IsAccess } from '@certd/pipeline';
   name: 'woai',
   title: '我爱云授权',
   desc: '我爱云CDN',
+  icon: 'clarity:plugin-line',
 })
 export class WoaiAccess extends BaseAccess {
   @AccessInput({

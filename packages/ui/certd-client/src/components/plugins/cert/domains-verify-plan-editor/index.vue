@@ -13,7 +13,7 @@
         <table class="plan-table">
           <thead>
             <tr>
-              <th>域名</th>
+              <th style="min-width: 100px">主域名</th>
               <th>验证方式</th>
               <th>验证计划</th>
             </tr>
@@ -33,7 +33,7 @@
                       <span class="label">DNS类型：</span>
                       <span class="input">
                         <fs-dict-select
-                          v-model="item.dnsProviderType"
+                          v-model:value="item.dnsProviderType"
                           size="small"
                           :dict="dnsProviderTypeDict"
                           placeholder="DNS提供商"
@@ -58,6 +58,9 @@
                   <div v-if="item.type === 'cname'" class="plan-cname">
                     <cname-verify-plan v-model="item.cnameVerifyPlan" @change="onPlanChanged" />
                   </div>
+                  <div v-if="item.type === 'http'" class="plan-http">
+                    <http-verify-plan v-model="item.httpVerifyPlan" @change="onPlanChanged" />
+                  </div>
                 </div>
               </td>
             </tr>
@@ -76,9 +79,12 @@ import { ref, watch } from "vue";
 import { dict, FsDictSelect } from "@fast-crud/fast-crud";
 import AccessSelector from "/@/views/certd/access/access-selector/index.vue";
 import CnameVerifyPlan from "./cname-verify-plan.vue";
+import HttpVerifyPlan from "./http-verify-plan.vue";
+//@ts-ignore
 import psl from "psl";
 import { Form } from "ant-design-vue";
 import { DomainsVerifyPlanInput } from "./type";
+import { CnameRecord, DomainGroupItem } from "./api";
 defineOptions({
   name: "DomainsVerifyPlanEditor"
 });
@@ -91,12 +97,17 @@ const challengeTypeOptions = ref<any[]>([
   {
     label: "CNAME验证",
     value: "cname"
+  },
+  {
+    label: "HTTP验证",
+    value: "http"
   }
 ]);
 
 const props = defineProps<{
   modelValue?: DomainsVerifyPlanInput;
   domains?: string[];
+  defaultType?: string;
 }>();
 
 const emit = defineEmits<{
@@ -126,23 +137,17 @@ function showError(error: string) {
   errorMessageRef.value = error;
 }
 
-type DomainGroup = Record<
-  string,
-  {
-    [key: string]: CnameRecord;
-  }
->[];
+type DomainGroup = Record<string, DomainGroupItem>;
 
 function onDomainsChanged(domains: string[]) {
-  console.log("域名变化", domains);
   if (domains == null) {
     return;
   }
 
   const domainGroups: DomainGroup = {};
   for (let domain of domains) {
-    domain = domain.replace("*.", "");
-    const parsed = psl.parse(domain);
+    const keyDomain = domain.replace("*.", "");
+    const parsed = psl.parse(keyDomain);
     if (parsed.error) {
       showError(`域名${domain}解析失败: ${JSON.stringify(parsed.error)}`);
       continue;
@@ -153,39 +158,83 @@ function onDomainsChanged(domains: string[]) {
     }
     let group = domainGroups[mainDomain];
     if (!group) {
-      group = {};
+      group = {
+        domain: mainDomain,
+        domains: [],
+        keySubDomains: []
+      } as DomainGroupItem;
       domainGroups[mainDomain] = group;
     }
-    group[domain] = {
-      id: 0
-    };
+    group.domains.push(domain);
+    group.keySubDomains.push(keyDomain);
   }
 
   for (const domain in domainGroups) {
     let planItem = planRef.value[domain];
-    const subDomains = domainGroups[domain];
+    const domainGroupItem = domainGroups[domain];
     if (!planItem) {
       planItem = {
         domain,
-        type: "cname",
-        cnameVerifyPlan: {
-          ...subDomains
-        }
+        //@ts-ignore
+        type: props.defaultType || "cname",
+        //@ts-ignore
+        cnameVerifyPlan: {},
+        //@ts-ignore
+        httpVerifyPlan: {}
       };
       planRef.value[domain] = planItem;
-    } else {
-      const cnamePlan = planItem.cnameVerifyPlan;
-      for (const subDomain in subDomains) {
-        if (!cnamePlan[subDomain]) {
-          cnamePlan[subDomain] = {
-            id: 0
-          };
-        }
+    }
+    planItem.domains = domainGroupItem.domains;
+
+    const cnameOrigin = planItem.cnameVerifyPlan;
+    const httpOrigin = planItem.httpVerifyPlan;
+    planItem.cnameVerifyPlan = {};
+    planItem.httpVerifyPlan = {};
+    const cnamePlan = planItem.cnameVerifyPlan;
+    const httpPlan = planItem.httpVerifyPlan;
+    for (const subDomain of domainGroupItem.keySubDomains) {
+      if (!cnameOrigin[subDomain]) {
+        //@ts-ignore
+        planItem.cnameVerifyPlan[subDomain] = {
+          id: 0
+        };
+      } else {
+        planItem.cnameVerifyPlan[subDomain] = cnameOrigin[subDomain];
       }
-      for (const subDomain of Object.keys(cnamePlan)) {
-        if (!subDomains[subDomain]) {
-          delete cnamePlan[subDomain];
-        }
+
+      if (!cnamePlan[subDomain]) {
+        //@ts-ignore
+        cnamePlan[subDomain] = {
+          id: 0
+        };
+      }
+
+      if (!httpOrigin[subDomain]) {
+        //@ts-ignore
+        planItem.httpVerifyPlan[subDomain] = {
+          domain: subDomain
+        };
+      } else {
+        planItem.httpVerifyPlan[subDomain] = httpOrigin[subDomain];
+      }
+
+      if (!httpPlan[subDomain]) {
+        //@ts-ignore
+        httpPlan[subDomain] = {
+          domain: subDomain
+        };
+      }
+    }
+
+    for (const subDomain of Object.keys(cnamePlan)) {
+      if (!domainGroupItem.keySubDomains.includes(subDomain)) {
+        delete cnamePlan[subDomain];
+      }
+    }
+
+    for (const subDomain of Object.keys(httpPlan)) {
+      if (!domainGroupItem.keySubDomains.includes(subDomain)) {
+        delete httpPlan[subDomain];
       }
     }
   }
@@ -199,10 +248,10 @@ function onDomainsChanged(domains: string[]) {
 
 watch(
   () => {
-    return props.domains;
+    return props.domains && props.defaultType;
   },
-  (domains: string[]) => {
-    onDomainsChanged(domains);
+  () => {
+    onDomainsChanged(props.domains);
   },
   {
     immediate: true,
@@ -276,12 +325,15 @@ watch(
       padding: 10px 6px;
     }
     td {
-      border-bottom: 1px solid #e8e8e8;
+      border-bottom: 2px solid #d8d8d8;
       border-left: 1px solid #e8e8e8;
       padding: 6px 6px;
     }
 
     .plan {
+      td {
+        border-right: 1px solid #e8e8e8 !important;
+      }
       font-size: 14px;
       .ant-select {
         width: 100%;

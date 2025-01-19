@@ -9,6 +9,12 @@ export type CnameRecord = {
   recordValue?: string;
 };
 
+export type DomainGroupItem = {
+  domain: string;
+  domains?: string[];
+  keySubDomains?: string[];
+};
+
 export async function GetList() {
   return await request({
     url: apiPrefix + "/list",

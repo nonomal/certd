@@ -1,6 +1,6 @@
 import { CoreV1Api, KubeConfig, NetworkingV1Api, V1Ingress, V1Secret } from '@kubernetes/client-node';
 import dns from 'dns';
-import { ILogger } from '@certd/pipeline';
+import { ILogger } from '@certd/basic';
 import _ from 'lodash-es';
 
 export type K8sClientOpts = {

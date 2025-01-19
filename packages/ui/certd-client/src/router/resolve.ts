@@ -1,5 +1,5 @@
 import LayoutPass from "/src/layout/layout-pass.vue";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 import { outsideResource } from "./source/outside";
 import { headerResource } from "./source/header";
 import { frameworkResource } from "./source/framework";
@@ -40,11 +40,11 @@ function transformOneResource(resource: any, parent: any) {
     if (route.component == null) {
       route.component = LayoutPass;
     }
-    if (route?.meta?.cache !== false) {
+    if (route?.meta?.cache !== true) {
       if (route.meta == null) {
         route.meta = {};
       }
-      route.meta.cache = true;
+      route.meta.cache = false;
     }
   }
   if (resource.children) {

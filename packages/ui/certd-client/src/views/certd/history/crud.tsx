@@ -22,9 +22,6 @@ export default function ({ crudExpose, context }: CreateCrudOptionsProps): Creat
   };
 
   const addRequest = async ({ form }: AddReq) => {
-    form.content = JSON.stringify({
-      title: form.title
-    });
     const res = await api.AddObj(form);
     return res;
   };
@@ -69,7 +66,12 @@ export default function ({ crudExpose, context }: CreateCrudOptionsProps): Creat
         formItem: {
           labelCol: {
             style: {
-              width: "120px"
+              // width: "100px"
+            }
+          },
+          wrapperCol: {
+            style: {
+              width: "50%"
             }
           }
         }
@@ -128,15 +130,17 @@ export default function ({ crudExpose, context }: CreateCrudOptionsProps): Creat
         },
         pipelineTitle: {
           title: "流水线名称",
-          type: "link",
+          type: "text",
           search: {
-            show: true,
-            component: {
-              name: "a-input"
-            }
+            show: true
           },
           column: {
-            width: 300
+            width: 300,
+            cellRender: ({ row, value }) => {
+              return (
+                <router-link to={{ path: "/certd/pipeline/detail", query: { id: row.pipelineId, editMode: false, historyId: row.id } }}>{value}</router-link>
+              );
+            }
           }
         },
         createTime: {

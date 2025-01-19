@@ -1,4 +1,5 @@
-import { Autowire, HttpClient, ILogger } from '@certd/pipeline';
+import { Autowire } from '@certd/pipeline';
+
 import { AbstractDnsProvider, CreateRecordOptions, IsDnsProvider, RemoveRecordOptions } from '@certd/plugin-cert';
 import * as _ from 'lodash-es';
 import { DnspodAccess } from '../access/index.js';
@@ -9,15 +10,11 @@ import { DnspodAccess } from '../access/index.js';
   desc: '已废弃，请尽快换成腾讯云类型',
   accessType: 'dnspod',
   deprecated: 'dnspod已废弃，请换成腾讯云',
+  icon: 'svg:icon-tencentcloud',
 })
 export class DnspodDnsProvider extends AbstractDnsProvider {
   @Autowire()
-  http!: HttpClient;
-
-  @Autowire()
   access!: DnspodAccess;
-  @Autowire()
-  logger!: ILogger;
 
   loginToken: any;
 

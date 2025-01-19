@@ -1,19 +1,8 @@
 // @ts-ignore
 import { request } from "/@/api/service";
+import { SysPrivateSetting, SysPublicSetting } from "/@/api/modules/api.basic";
 const apiPrefix = "/sys/settings";
 export type SysSettings = { public: SysPublicSetting; private: SysPrivateSetting };
-
-export type SysPublicSetting = {
-  registerEnabled?: boolean;
-  limitUserPipelineCount?: number;
-  managerOtherUserPipeline?: boolean;
-  icpNo?: string;
-};
-
-export type SysPrivateSetting = {
-  httpProxy?: string;
-  httpsProxy?: string;
-};
 
 export const SettingKeys = {
   SysPublic: "sys.public",
@@ -52,6 +41,14 @@ export async function EmailSettingsGet() {
   });
 }
 
+export async function EmailSettingsSave(setting: any) {
+  return await request({
+    url: apiPrefix + "/saveEmailSettings",
+    method: "post",
+    data: setting
+  });
+}
+
 export async function stopOtherUserTimer() {
   return await request({
     url: apiPrefix + "/stopOtherUserTimer",
@@ -78,5 +75,23 @@ export async function TestProxy() {
   return await request({
     url: apiPrefix + "/testProxy",
     method: "post"
+  });
+}
+
+export async function TestSms(data: any) {
+  return await request({
+    url: apiPrefix + "/testSms",
+    method: "post",
+    data
+  });
+}
+
+export async function GetSmsTypeDefine(type: string) {
+  return await request({
+    url: apiPrefix + "/getSmsTypeDefine",
+    method: "post",
+    data: {
+      type
+    }
   });
 }

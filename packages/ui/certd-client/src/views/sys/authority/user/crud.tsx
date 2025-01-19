@@ -75,7 +75,7 @@ export default function ({ crudExpose }: CreateCrudOptionsProps): CreateCrudOpti
               { max: 50, message: "最大50个字符" }
             ]
           },
-          editForm: { component: { disabled: true } },
+          editForm: { component: { disabled: false } },
           column: {
             sorter: true,
             width: 200
@@ -107,11 +107,35 @@ export default function ({ crudExpose }: CreateCrudOptionsProps): CreateCrudOpti
             sorter: true
           }
         },
+        email: {
+          title: "邮箱",
+          type: "text",
+          search: { show: true }, // 开启查询
+          form: {
+            rules: [{ max: 50, message: "最大50个字符" }]
+          },
+          column: {
+            sorter: true,
+            width: 160
+          }
+        },
+        mobile: {
+          title: "手机号",
+          type: "text",
+          search: { show: true }, // 开启查询
+          form: {
+            rules: [{ max: 50, message: "最大50个字符" }]
+          },
+          column: {
+            sorter: true,
+            width: 130
+          }
+        },
         avatar: {
           title: "头像",
           type: "cropper-uploader",
           column: {
-            width: 100,
+            width: 70,
             component: {
               //设置高度，修复操作列错位的问题
               style: {

@@ -98,18 +98,20 @@
                                     {{ index + 1 }}. {{ item.title }}
                                   </span>
                                   <pi-status-show v-if="!editMode" :status="item.status?.result"></pi-status-show>
-                                  <fs-icon
-                                    v-if="!editMode"
-                                    class="pointer color-blue ml-2"
-                                    style="font-size: 16px"
-                                    title="强制重新执行此步骤"
-                                    icon="icon-park-outline:replay-music"
-                                    @click="run(item.id)"
-                                  ></fs-icon>
+                                  <a-tooltip title="强制重新执行此步骤">
+                                    <fs-icon
+                                      v-if="!editMode"
+                                      class="pointer color-blue ml-2"
+                                      style="font-size: 16px"
+                                      title="强制重新执行此步骤"
+                                      icon="icon-park-outline:replay-music"
+                                      @click="run(item.id)"
+                                    ></fs-icon>
+                                  </a-tooltip>
                                 </div>
                               </template>
                               <span class="flex-o w-100">
-                                <span class="ellipsis flex-1 task-title" :class="{ 'in-edit': editMode }">{{ task.title }}</span>
+                                <span class="ellipsis flex-1 task-title" :class="{ 'in-edit': editMode, deleted: task.disabled }">{{ task.title }}</span>
                                 <pi-status-show :status="task.status?.result"></pi-status-show>
                               </span>
                             </a-popover>
@@ -180,8 +182,10 @@
                       </div>
                       <div class="task">
                         <a-button shape="round" @click="notificationEdit(item, ii as number)">
-                          <fs-icon icon="ion:notifications"></fs-icon>
-                          【通知】 {{ item.type }}
+                          <div class="flex-o w-100">
+                            <fs-icon icon="ion:notifications"></fs-icon>
+                            <span class="ellipsis flex-1 step-title align-left"> 【通知】 {{ item.title || item.type }} </span>
+                          </div>
                         </a-button>
                       </div>
                     </div>
@@ -198,9 +202,10 @@
                       </div>
                       <div class="task">
                         <a-button shape="round" @click="notificationEdit(item, index)">
-                          <fs-icon icon="ion:notifications"></fs-icon>
-
-                          【通知】 {{ item.type }}
+                          <div class="flex-o w-100">
+                            <fs-icon icon="ion:notifications"></fs-icon>
+                            <span class="ellipsis flex-1 step-title align-left"> 【通知】 {{ item.title || item.type }} </span>
+                          </div>
                         </a-button>
                       </div>
                     </div>
@@ -260,7 +265,7 @@ import PiNotificationForm from "./component/notification-form/index.vue";
 import PiTaskView from "./component/task-view/index.vue";
 import PiStatusShow from "./component/status-show.vue";
 import VDraggable from "vuedraggable";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 import { message, Modal, notification, TourProps } from "ant-design-vue";
 import { nanoid } from "nanoid";
 import { PipelineDetail, PipelineOptions, PluginGroups, RunHistory } from "./type";
@@ -304,7 +309,6 @@ export default defineComponent({
     }
 
     const loadCurrentHistoryDetail = async () => {
-      console.log("load history logs");
       const detail: RunHistory = await props.options?.getHistoryDetail({ historyId: currentHistory.value.id });
       currentHistory.value.logs = detail.logs;
       _.merge(currentHistory.value.pipeline, detail.pipeline);
@@ -319,7 +323,6 @@ export default defineComponent({
       currentHistory.value = history;
       pipeline.value = history.pipeline;
       await loadCurrentHistoryDetail();
-      console.log("currentHistory:", currentHistory);
     };
 
     async function loadHistoryList(reload = false) {
@@ -329,7 +332,6 @@ export default defineComponent({
       if (reload) {
         histories.value = [];
       }
-      console.log("load history list");
       const historyList = await props.options.getHistoryList({ pipelineId: pipeline.value.id });
       if (!historyList) {
         return;
@@ -884,6 +886,8 @@ export default defineComponent({
               .task-title {
                 &.in-edit {
                   margin-right: 28px;
+                }
+                &.disabled {
                 }
               }
 

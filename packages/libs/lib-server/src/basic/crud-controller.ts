@@ -49,4 +49,10 @@ export abstract class CrudController<T> extends BaseController {
     await this.getService().delete([id]);
     return this.ok(null);
   }
+
+  @Post('/deleteByIds')
+  async deleteByIds(@Body('ids') ids: number[]) {
+    await this.getService().delete(ids);
+    return this.ok(null);
+  }
 }

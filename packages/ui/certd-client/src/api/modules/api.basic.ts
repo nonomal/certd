@@ -24,11 +24,30 @@ export type PlusInfo = {
   isComm?: boolean;
 };
 export type SysPublicSetting = {
-  registerEnabled: boolean;
-  managerOtherUserPipeline: boolean;
+  registerEnabled?: boolean;
+  usernameRegisterEnabled?: boolean;
+  mobileRegisterEnabled?: boolean;
+  emailRegisterEnabled?: boolean;
+  passwordLoginEnabled?: boolean;
+  smsLoginEnabled?: boolean;
+
+  limitUserPipelineCount?: number;
+  managerOtherUserPipeline?: boolean;
   icpNo?: string;
 };
-
+export type SuiteSetting = {
+  enabled?: boolean;
+};
+export type SysPrivateSetting = {
+  httpProxy?: string;
+  httpsProxy?: string;
+  dnsResultOrder?: string;
+  commonCnameEnabled?: boolean;
+  sms?: {
+    type?: string;
+    config?: any;
+  };
+};
 export type SysInstallInfo = {
   siteId: string;
 };
@@ -50,6 +69,7 @@ export type AllSettings = {
   siteInfo: SiteInfo;
   siteEnv: SiteEnv;
   headerMenus: HeaderMenus;
+  suiteSetting: SuiteSetting;
 };
 
 export async function loadAllSettings(): Promise<AllSettings> {
@@ -62,6 +82,22 @@ export async function loadAllSettings(): Promise<AllSettings> {
 export async function bindUrl(data: any): Promise<any> {
   return await request({
     url: "/sys/plus/bindUrl",
+    method: "post",
+    data
+  });
+}
+
+export async function sendSmsCode(data: any): Promise<any> {
+  return await request({
+    url: "/basic/code/sendSmsCode",
+    method: "post",
+    data
+  });
+}
+
+export async function sendEmailCode(data: any): Promise<any> {
+  return await request({
+    url: "/basic/code/sendEmailCode",
     method: "post",
     data
   });

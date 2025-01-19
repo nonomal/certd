@@ -76,6 +76,22 @@ export async function Cancel(historyId: any) {
   });
 }
 
+export async function BatchUpdateGroup(pipelineIds: number[], groupId: number): Promise<CertInfo> {
+  return await request({
+    url: apiPrefix + "/batchUpdateGroup",
+    method: "post",
+    data: { ids: pipelineIds, groupId }
+  });
+}
+
+export async function BatchDelete(pipelineIds: number[]): Promise<CertInfo> {
+  return await request({
+    url: apiPrefix + "/batchDelete",
+    method: "post",
+    data: { ids: pipelineIds }
+  });
+}
+
 export async function GetFiles(pipelineId: number) {
   return await request({
     url: historyApiPrefix + "/files",

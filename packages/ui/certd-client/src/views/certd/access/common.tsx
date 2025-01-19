@@ -6,6 +6,9 @@ import SecretPlainGetter from "/@/views/certd/access/access-selector/access/secr
 
 export function getCommonColumnDefine(crudExpose: any, typeRef: any, api: any) {
   provide("accessApi", api);
+  provide("get:plugin:type", () => {
+    return "access";
+  });
   const AccessTypeDictRef = dict({
     url: "/pi/access/accessTypeDict"
   });
@@ -38,11 +41,22 @@ export function getCommonColumnDefine(crudExpose: any, typeRef: any, api: any) {
         column.suffixRender = (scope: { form: any; key: string }) => {
           const { form, key } = scope;
           const inputKey = scope.key.replace("access.", "");
-          return <SecretPlainGetter accessId={form.id} inputKey={inputKey} v-model={form[key]} />;
+          const onChange = (val: any) => {
+            set(form, key, val);
+          };
+          const value = get(form, key);
+          return <SecretPlainGetter accessId={form.id} inputKey={inputKey} modalValue={value} onUpdate:modelValue={onChange} />;
         };
       }
       //eval
       useReference(column);
+
+      if (column.required) {
+        if (!column.rules) {
+          column.rules = [];
+        }
+        column.rules.push({ required: true, message: "此项必填" });
+      }
 
       //设置默认值
       if (column.value != null && get(form, key) == null) {
@@ -77,6 +91,14 @@ export function getCommonColumnDefine(crudExpose: any, typeRef: any, api: any) {
           filterOption: (input: string, option: any) => {
             input = input?.toLowerCase();
             return option.value.toLowerCase().indexOf(input) >= 0 || option.label.toLowerCase().indexOf(input) >= 0;
+          },
+          renderLabel(item: any) {
+            return (
+              <span class={"flex-o"}>
+                <fs-icon icon={item.icon} class={"mr-5 fs-16 color-blue"} />
+                {item.label}
+              </span>
+            );
           }
         },
         rules: [{ required: true, message: "请选择类型" }],

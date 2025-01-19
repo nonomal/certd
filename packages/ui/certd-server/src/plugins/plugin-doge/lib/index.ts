@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import querystring from 'querystring';
 import { DogeCloudAccess } from '../access.js';
-import { HttpClient } from '@certd/pipeline';
+import { HttpClient } from '@certd/basic';
 
 export class DogeClient {
   accessKey: string;

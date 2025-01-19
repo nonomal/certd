@@ -1,1 +1,1 @@
-export { isDev } from '@certd/pipeline';
+export { isDev } from '@certd/basic';

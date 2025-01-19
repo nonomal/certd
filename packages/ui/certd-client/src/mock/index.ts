@@ -1,6 +1,6 @@
 import { mock } from "../api/service";
 import * as tools from "../api/tools";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 import { utils } from "@fast-crud/fast-crud";
 // @ts-ignore
 const commonMocks: any = import.meta.glob("./common/mock.*.[j|t]s", { eager: true });

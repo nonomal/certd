@@ -1,4 +1,4 @@
-import { OnRegisterContext, Registry } from "../registry/index.js";
+import { createRegistry, OnRegisterContext } from "../registry/index.js";
 import { AbstractTaskPlugin } from "./api.js";
 import { pluginGroups } from "./group.js";
 
@@ -13,4 +13,4 @@ const onRegister = ({ key, value }: OnRegisterContext<AbstractTaskPlugin>) => {
     }
   }
 };
-export const pluginRegistry = new Registry<AbstractTaskPlugin>("plugin", onRegister);
+export const pluginRegistry = createRegistry<AbstractTaskPlugin>("plugin", onRegister);

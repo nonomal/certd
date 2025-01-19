@@ -54,10 +54,25 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: center;
   align-items: center;
 }
-
+.flex-vc{
+  align-items: center;
+}
+.flex-vb{
+  align-items: baseline;
+}
 .flex-o {
   display: flex !important;
   align-items: center;
+}
+.flex-baseline{
+  display: flex !important;
+  align-items: baseline;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
 }
 
 .flex {
@@ -72,15 +87,27 @@ h1, h2, h3, h4, h5, h6 {
 .flex-1 {
   flex: 1;
 }
+.flex-0 {
+  flex: 0;
+}
 
 .flex-col {
   display: flex;
   flex-direction: column;
 }
+.align-left{
+  text-align: left;
+}
+.align-right{
+  text-align: right;
+}
 
 .scroll-y {
   overflow-y: auto;
 
+}
+.m-0{
+  margin:0
 }
 .m-2{
   margin:2px
@@ -158,6 +185,9 @@ h1, h2, h3, h4, h5, h6 {
   padding: 10px;
 }
 
+.p-20 {
+  padding: 20px;
+}
 .ellipsis {
   white-space: nowrap;
   overflow: hidden;
@@ -183,7 +213,9 @@ h1, h2, h3, h4, h5, h6 {
   border-bottom: 1px solid #dedede;
 }
 
-
+.color-plus{
+  color: #c5913f;
+}
 .color-blue {
   color: #1890ff;
 }
@@ -194,6 +226,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .color-green {
   color: green;
+}
+.color-gray {
+  color: gray;
 }
 
 .iconify{
@@ -234,7 +269,8 @@ h1, h2, h3, h4, h5, h6 {
 .helper {
   color: #aeaeae;
   font-size: 12px;
-
+  margin-top:3px;
+  margin-bottom:3px;
   &.error{
     color: #ff4d4f;
   }
@@ -256,4 +292,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .fs-16{
     font-size: 16px;
+}
+
+.w-50\%{
+    width: 50%;
 }

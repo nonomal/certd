@@ -2,11 +2,12 @@
  * Utility methods
  */
 
-const tls = require('tls');
-const dns = require('dns').promises;
-const { readCertificateInfo, splitPemChain } = require('./crypto');
-const { log } = require('./logger');
+import tls from 'tls';
+import dnsSdk from 'dns';
+import { readCertificateInfo, splitPemChain }from './crypto/index.js'
+import { log } from './logger.js'
 
+const dns = dnsSdk.promises;
 /**
  * Exponential backoff
  *
@@ -329,7 +330,7 @@ async function retrieveTlsAlpnCertificate(host, port, timeout = 30000) {
  * Export utils
  */
 
-module.exports = {
+export {
     retry,
     parseLinkHeader,
     parseRetryAfterHeader,
@@ -338,3 +339,4 @@ module.exports = {
     getAuthoritativeDnsResolver,
     retrieveTlsAlpnCertificate,
 };
+

@@ -2,7 +2,7 @@ import { Autoload, Config, Init, Inject, Provide, Scope, ScopeEnum } from '@midw
 import { IMidwayKoaContext, IWebMiddleware, NextFunction } from '@midwayjs/koa';
 import { CommonException } from '@certd/lib-server';
 import { UserService } from '../../modules/sys/authority/service/user-service.js';
-import { logger } from '@certd/pipeline';
+import { logger } from '@certd/basic';
 
 /**
  * 重置密码模式
@@ -31,7 +31,8 @@ export class ResetPasswdMiddleware implements IWebMiddleware {
       const newPasswd = '123456';
       await this.userService.resetPassword(1, newPasswd);
       await this.userService.updateStatus(1, 1);
-      logger.info(`重置1号管理员用户的密码完成，新密码为：${newPasswd}`);
+      const user = await this.userService.info(1);
+      logger.info(`重置1号管理员用户的密码完成，用户名：${user.username},新密码：${newPasswd}`);
     }
   }
 }

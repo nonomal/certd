@@ -1,5 +1,5 @@
 import { request } from "/src/api/service";
-const apiPrefix = "/basic/email";
+const apiPrefix = "/mine/email";
 
 export async function TestSend(receiver: string) {
   await request({

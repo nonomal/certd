@@ -69,7 +69,8 @@ router.afterEach((to: any) => {
   // }
   pageStore.open(to);
   // 更改标题
-  site.title(to.meta.title);
+  const settingStore = useSettingStore();
+  site.title(to.meta.title, settingStore.siteInfo.title);
 
   //修改左侧边栏
   const matched = to.matched;
