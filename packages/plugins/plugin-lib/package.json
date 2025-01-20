@@ -1,7 +1,7 @@
 {
   "name": "@certd/plugin-lib",
   "private": false,
-  "version": "1.30.0",
+  "version": "1.30.1",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -16,8 +16,8 @@
   },
   "dependencies": {
     "@alicloud/pop-core": "^1.7.10",
-    "@certd/basic": "^1.30.0",
-    "@certd/pipeline": "^1.30.0",
+    "@certd/basic": "^1.30.1",
+    "@certd/pipeline": "^1.30.1",
     "@kubernetes/client-node": "0.21.0",
     "ali-oss": "^6.21.0",
     "basic-ftp": "^5.0.5",
