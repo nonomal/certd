@@ -3,7 +3,7 @@ import { CertInfo } from '@certd/plugin-cert';
 import { AliyunAccess, AliyunClient, AliyunSslClient, createCertDomainGetterInputDefine, createRemoteSelectInputDefine } from '@certd/plugin-lib';
 
 @IsTaskPlugin({
-  name: 'AliyunDeployCertToLB',
+  name: 'AliyunDeployCertToNLB',
   title: '阿里云-部署至NLB（网络负载均衡）',
   icon: 'ant-design:aliyun-outlined',
   group: pluginGroups.aliyun.key,
@@ -43,7 +43,7 @@ export class AliyunDeployCertToNLB extends AbstractTaskPlugin {
 
   @TaskInput(
     createRemoteSelectInputDefine({
-      title: 'LB所在地区',
+      title: 'NLB所在地区',
       typeName: 'AliyunDeployCertToNLB',
       multi: false,
       action: AliyunDeployCertToNLB.prototype.onGetRegionList.name,
