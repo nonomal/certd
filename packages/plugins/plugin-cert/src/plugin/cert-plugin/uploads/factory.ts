@@ -8,6 +8,9 @@ export class HttpChallengeUploaderFactory {
     } else if (type === "ssh") {
       const module = await import("./impls/ssh.js");
       return module.SshHttpChallengeUploader;
+    } else if (type === "sftp") {
+      const module = await import("./impls/sftp.js");
+      return module.SftpHttpChallengeUploader;
     } else if (type === "ftp") {
       const module = await import("./impls/ftp.js");
       return module.FtpHttpChallengeUploader;

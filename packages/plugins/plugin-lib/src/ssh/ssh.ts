@@ -80,11 +80,11 @@ export class AsyncSsh2Client {
     });
   }
 
-  async fastPut(options: { sftp: any; localPath: string; remotePath: string }) {
-    const { sftp, localPath, remotePath } = options;
+  async fastPut(options: { sftp: any; localPath: string; remotePath: string; opts?: { mode?: number } }) {
+    const { sftp, localPath, remotePath, opts } = options;
     return new Promise((resolve, reject) => {
       this.logger.info(`开始上传：${localPath} => ${remotePath}`);
-      sftp.fastPut(localPath, remotePath, (err: Error) => {
+      sftp.fastPut(localPath, remotePath, { ...(opts ?? {}) }, (err: Error) => {
         if (err) {
           reject(err);
           this.logger.error("请确认路径是否包含文件名，路径本身不能是目录，路径不能有*?之类的特殊符号，要有写入权限");
@@ -255,8 +255,8 @@ export class SshClient {
          }
    * @param options
    */
-  async uploadFiles(options: { connectConf: SshAccess; transports: TransportItem[]; mkdirs: boolean }) {
-    const { connectConf, transports, mkdirs } = options;
+  async uploadFiles(options: { connectConf: SshAccess; transports: TransportItem[]; mkdirs: boolean; opts?: { mode?: number } }) {
+    const { connectConf, transports, mkdirs, opts } = options;
     await this._call({
       connectConf,
       callable: async (conn: AsyncSsh2Client) => {
@@ -281,7 +281,7 @@ export class SshClient {
             }
             await conn.exec(mkdirCmd);
           }
-          await conn.fastPut({ sftp, ...transport });
+          await conn.fastPut({ sftp, ...transport, opts });
         }
         this.logger.info("文件全部上传成功");
       },

@@ -232,7 +232,7 @@ HTTP文件验证：不支持泛域名，需要配置网站文件上传`,
         // { value: "ec_521", label: "EC 521" },
       ],
     },
-    helper: "如无特殊需求，默认即可",
+    helper: "如无特殊需求，默认即可\n选择RSA 2048 pkcs1可以获得旧版RSA证书",
     required: true,
   })
   privateKeyType!: PrivateKeyType;

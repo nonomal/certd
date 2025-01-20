@@ -30,7 +30,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Ref, ref, watch } from "vue";
+import { Ref, ref, watch, nextTick } from "vue";
 import { HttpRecord } from "/@/components/plugins/cert/domains-verify-plan-editor/type";
 import { dict } from "@fast-crud/fast-crud";
 
@@ -62,18 +62,20 @@ watch(
   }
 );
 
-function onRecordChange() {
+async function onRecordChange() {
+  await nextTick();
   emit("update:modelValue", records.value);
   emit("change", records.value);
 }
 
 const uploaderTypeDict = dict({
   data: [
-    { label: "SFTP/SSH", value: "ssh" },
+    { label: "SFTP", value: "sftp" },
     { label: "FTP", value: "ftp" },
     { label: "阿里云OSS", value: "alioss" },
     { label: "腾讯云COS", value: "tencentcos" },
-    { label: "七牛OSS", value: "qiniuoss" }
+    { label: "七牛OSS", value: "qiniuoss" },
+    { label: "SSH(已废弃，请选择SFTP方式)", value: "ssh", disabled: true }
   ]
 });
 </script>
