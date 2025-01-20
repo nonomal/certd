@@ -135,32 +135,35 @@ export class DeployCertToTencentCLB extends AbstractTaskPlugin {
       const domains = Array.isArray(this.domain) ? this.domain : [this.domain];
       for (const domain of domains) {
         this.logger.info(`开始更新域名证书:${domain},请确保已经开启了sni`);
-        const lastCertId = await this.getCertIdFromProps(client, domain);
+        // const lastCertId = await this.getCertIdFromProps(client, domain);
 
         await this.updateByDomainAttr(client, domain);
 
-        const checkDeployed = async (wait = 5) => {
-          await this.ctx.utils.sleep(wait * 1000);
-          this.logger.info(`等待${wait}秒`);
-          const newCertId = await this.getCertIdFromProps(client, domain);
-          this.logger.info(`oldCertId:${lastCertId} , newCertId:${newCertId}`);
-          if ((lastCertId && newCertId === lastCertId) || (!lastCertId && !newCertId)) {
-            return false;
-          }
-          this.logger.info('腾讯云证书ID:', newCertId);
-          return true;
-        };
-        let count = 0;
-        while (true) {
-          count++;
-          const res = await checkDeployed(5);
-          if (res) {
-            break;
-          }
-          if (count > 6) {
-            throw new Error('部署可能失败，请确认是否已开启sni');
-          }
-        }
+        this.logger.info(`设置腾讯云CLB证书(sni)成功:loadBalancerId:${this.loadBalancerId},listenerId:${this.listenerId},domain:${domain}`);
+
+        // 不要做检查，相同的证书，不会生成新的证书id
+        // const checkDeployed = async (wait = 5) => {
+        //   await this.ctx.utils.sleep(wait * 1000);
+        //   this.logger.info(`等待${wait}秒`);
+        //   const newCertId = await this.getCertIdFromProps(client, domain);
+        //   this.logger.info(`oldCertId:${lastCertId} , newCertId:${newCertId}`);
+        //   if ((lastCertId && newCertId === lastCertId) || (!lastCertId && !newCertId)) {
+        //     return false;
+        //   }
+        //   this.logger.info('腾讯云证书ID:', newCertId);
+        //   return true;
+        // };
+        // let count = 0;
+        // while (true) {
+        //   count++;
+        //   const res = await checkDeployed(5);
+        //   if (res) {
+        //     break;
+        //   }
+        //   if (count > 6) {
+        //     this.logger.warn('等待超时，可能证书未部署成功');
+        //   }
+        // }
       }
     }
 
