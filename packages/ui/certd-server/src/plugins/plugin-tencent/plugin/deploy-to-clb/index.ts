@@ -139,8 +139,6 @@ export class DeployCertToTencentCLB extends AbstractTaskPlugin {
 
         await this.updateByDomainAttr(client, domain);
 
-        this.logger.info(`设置腾讯云CLB证书(sni)成功:loadBalancerId:${this.loadBalancerId},listenerId:${this.listenerId},domain:${domain}`);
-
         // 不要做检查，相同的证书，不会生成新的证书id
         // const checkDeployed = async (wait = 5) => {
         //   await this.ctx.utils.sleep(wait * 1000);
