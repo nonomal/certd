@@ -122,7 +122,7 @@ export default function ({ crudExpose, context: { certdFormRef, groupDictRef, se
       if (form.notification != null) {
         notifications.push({
           type: "custom",
-          when: ["error", "turnToSuccess"],
+          when: ["error", "turnToSuccess", "success"],
           notificationId: form.notification,
           title: form.notificationTarget?.name || "自定义通知"
         });
