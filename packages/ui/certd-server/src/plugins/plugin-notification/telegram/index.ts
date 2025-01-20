@@ -58,13 +58,16 @@ export class TelegramNotification extends BaseNotification {
   })
   skipSslVerify: boolean;
 
+  replaceText(text: string) {
+    return text.replaceAll('.', '\\.').replaceAll('*', '\\*');
+  }
   async send(body: NotificationBody) {
     if (!this.botToken || !this.chatId) {
       throw new Error('Bot Token 和聊天ID不能为空');
     }
 
     // 构建消息内容
-    const messageContent = `*${body.title}*\n\n${body.content}\n\n[查看详情](${body.url})`;
+    const messageContent = `${this.replaceText(body.title)}\n\n${this.replaceText(body.content)}\n\n[查看详情](${body.url})`;
 
     // Telegram API URL
     const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;

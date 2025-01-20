@@ -435,7 +435,7 @@ export class Executor {
               content,
               userId: this.pipeline.userId,
               pipeline: this.pipeline,
-              result: this.lastRuntime.pipeline.status,
+              result: this.lastRuntime?.pipeline?.status,
               pipelineId: this.pipeline.id,
               historyId: this.runtime.id,
               errorMessage,
