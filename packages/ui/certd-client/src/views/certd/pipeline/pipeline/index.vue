@@ -78,7 +78,8 @@
                       <div
                         class="task-container"
                         :class="{
-                          'first-task': taskIndex === 0
+                          'first-task': taskIndex === 0,
+                          'validate-error': hasValidateError(task.id)
                         }"
                       >
                         <div class="line line-left">
@@ -171,7 +172,6 @@
                       <div class="task">
                         <a-button shape="round" type="dashed" @click="notificationAdd()">
                           <fs-icon icon="ion:add-circle-outline"></fs-icon>
-
                           添加通知
                         </a-button>
                       </div>
@@ -626,7 +626,78 @@ export default defineComponent({
       function toggleEditMode(editMode: boolean) {
         ctx.emit("update:editMode", editMode);
       }
+
+      const validateErrors: Ref = ref({});
+      function addValidateError(taskId: string, error: any) {
+        const errors = validateErrors.value[taskId] || [];
+        validateErrors.value[taskId] = errors;
+        errors.push(error);
+      }
+      function doValidate() {
+        validateErrors.value = {};
+
+        const stepIds: string[] = [];
+        //校验output id是否正确
+        const pp = pipeline.value;
+        function eachSteps(callback: any) {
+          if (pp.stages) {
+            for (const stage of pp.stages) {
+              if (stage.tasks) {
+                for (const task of stage.tasks) {
+                  if (task.steps) {
+                    for (const step of task.steps) {
+                      callback(step, task, stage);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        //检查输出的stepid是否存在
+        let hasError = false;
+        let errorMessage = "";
+        eachSteps((step: any, task: any, stage: any) => {
+          stepIds.push(step.id);
+          if (step.input) {
+            for (const key in step.input) {
+              const value = step.input[key];
+              if (value == null || typeof value != "string" || !value.startsWith("step.")) {
+                continue;
+              }
+              const arr = value.split(".");
+              if (arr.length != 3) {
+                continue;
+              }
+              const stepId = arr[1];
+              const paramName = arr[2];
+              if (!stepIds.includes(stepId)) {
+                hasError = true;
+                const message = `任务${step.title}的前置输出步骤${paramName}不存在，请重新修改此任务`;
+                addValidateError(task.id, {
+                  message
+                });
+                addValidateError(step.id, {
+                  message
+                });
+                errorMessage += message + "；";
+              }
+            }
+          }
+        });
+
+        if (hasError) {
+          notification.error({ message: errorMessage });
+          throw new Error(errorMessage);
+        }
+      }
+
+      function hasValidateError(taskId: string) {
+        return validateErrors.value[taskId] != null;
+      }
       const save = async () => {
+        doValidate();
+
         saveLoading.value = true;
         try {
           if (props.options.doSave) {
@@ -663,7 +734,8 @@ export default defineComponent({
         save,
         edit,
         cancel,
-        saveLoading
+        saveLoading,
+        hasValidateError
       };
     }
 
@@ -875,6 +947,14 @@ export default defineComponent({
             justify-content: center;
             align-items: center;
             position: relative;
+
+            &.validate-error {
+              .task {
+                .ant-btn {
+                  border-color: red;
+                }
+              }
+            }
             .task {
               display: flex;
               flex-direction: column;
