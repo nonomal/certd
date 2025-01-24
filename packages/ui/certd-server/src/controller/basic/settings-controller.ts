@@ -11,6 +11,7 @@ import {
   SysSuiteSetting,
 } from '@certd/lib-server';
 import { AppKey, getPlusInfo, isComm } from '@certd/plus-core';
+import { cloneDeep } from 'lodash-es';
 
 /**
  */
@@ -62,7 +63,10 @@ export class BasicSettingsController extends BaseController {
   }
 
   async plusInfo() {
-    return getPlusInfo();
+    const res = getPlusInfo();
+    const copy = cloneDeep(res);
+    delete copy.secret;
+    return copy;
   }
 
   @Get('/all', { summary: Constants.per.guest })
