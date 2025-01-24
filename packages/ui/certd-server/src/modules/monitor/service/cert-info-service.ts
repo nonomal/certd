@@ -1,10 +1,16 @@
 import { Provide, Scope, ScopeEnum } from '@midwayjs/core';
-import { BaseService, CodeException, Constants, PageReq } from '@certd/lib-server';
+import { BaseService, CodeException, CommonException, Constants, PageReq } from '@certd/lib-server';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import { CertInfoEntity } from '../entity/cert-info.js';
 import { utils } from '@certd/basic';
 import { CertInfo, CertReader } from '@certd/plugin-cert';
+
+export type UploadCertReq = {
+  id?: number;
+  certReader: CertReader;
+  fromType?: string;
+};
 
 @Provide()
 @Scope(ScopeEnum.Request, { allowDowngrade: true })
@@ -125,15 +131,27 @@ export class CertInfoService extends BaseService<CertInfoEntity> {
     return certReader.toCertInfo();
   }
 
-  async updateCert(pipelineId: number, certReader: CertReader) {
+  async updateCertByPipelineId(pipelineId: number, certReader: CertReader, fromType = 'pipeline') {
     const found = await this.repository.findOne({
       where: {
         pipelineId,
       },
     });
+    const bean = await this.updateCert({
+      id: found?.id,
+      certReader,
+      fromType,
+    });
+    return bean;
+  }
+
+  private async updateCert(req: UploadCertReq) {
     const bean = new CertInfoEntity();
-    if (found) {
-      bean.id = found.id;
+    const { id, fromType, certReader } = req;
+    if (id) {
+      bean.id = id;
+    } else {
+      bean.fromType = fromType;
     }
     const certInfo = certReader.toCertInfo();
     bean.certInfo = JSON.stringify(certInfo);
@@ -146,5 +164,19 @@ export class CertInfoService extends BaseService<CertInfoEntity> {
     bean.certProvider = certReader.detail.issuer.commonName;
 
     await this.addOrUpdate(bean);
+    return bean;
+  }
+
+  async upload(body: { id?: number; cert: CertInfo }) {
+    const { id, cert } = body;
+    if (!cert) {
+      throw new CommonException("cert can't be empty");
+    }
+    const res = await this.updateCert({
+      id,
+      certReader: new CertReader(cert),
+      fromType: 'upload',
+    });
+    return res.id;
   }
 }

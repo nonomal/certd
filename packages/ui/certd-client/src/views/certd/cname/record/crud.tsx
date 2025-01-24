@@ -70,7 +70,7 @@ export default function ({ crudExpose, context }: CreateCrudOptionsProps): Creat
           key: "id",
           type: "number",
           column: {
-            width: 100
+            width: 80
           },
           form: {
             show: false

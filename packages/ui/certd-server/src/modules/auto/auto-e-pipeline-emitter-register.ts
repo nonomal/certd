@@ -16,7 +16,7 @@ export class AutoEPipelineEmitterRegister {
   }
   async onCertApplySuccess() {
     pipelineEmitter.on(EVENT_CERT_APPLY_SUCCESS, async (event: PipelineEvent<CertReader>) => {
-      await this.certInfoService.updateCert(event.pipeline.id, event.event);
+      await this.certInfoService.updateCertByPipelineId(event.pipeline.id, event.event);
     });
   }
 }

@@ -1,12 +1,14 @@
 // @ts-ignore
 import { useI18n } from "vue-i18n";
-import { AddReq, CreateCrudOptionsProps, CreateCrudOptionsRet, DelReq, EditReq, UserPageQuery, UserPageRes } from "@fast-crud/fast-crud";
-import { pipelineGroupApi } from "./api";
+import { AddReq, CreateCrudOptionsProps, CreateCrudOptionsRet, DelReq, EditReq, useFormWrapper, UserPageQuery, UserPageRes } from "@fast-crud/fast-crud";
+import { certInfoApi } from "./api";
 import dayjs from "dayjs";
+import { useUserStore } from "/@/store/modules/user";
+import { useRouter } from "vue-router";
 
 export default function ({ crudExpose, context }: CreateCrudOptionsProps): CreateCrudOptionsRet {
   const { t } = useI18n();
-  const api = pipelineGroupApi;
+  const api = certInfoApi;
   const pageRequest = async (query: UserPageQuery): Promise<UserPageRes> => {
     return await api.GetList(query);
   };
@@ -26,7 +28,8 @@ export default function ({ crudExpose, context }: CreateCrudOptionsProps): Creat
     const res = await api.AddObj(form);
     return res;
   };
-
+  const { openCrudFormDialog } = useFormWrapper();
+  const router = useRouter();
   return {
     crudOptions: {
       request: {
@@ -50,7 +53,67 @@ export default function ({ crudExpose, context }: CreateCrudOptionsProps): Creat
           width: 600
         }
       },
-      actionbar: { show: false },
+      actionbar: {
+        show: true,
+        buttons: {
+          add: {
+            text: "上传自定义证书",
+            type: "primary",
+            async click() {
+              function createCrudOptions() {
+                return {
+                  crudOptions: {
+                    request: {
+                      addRequest: async (form: any) => {
+                        return await api.Upload(form);
+                      },
+                      editRequest: async (form: any) => {
+                        return await api.Upload(form);
+                      }
+                    },
+                    columns: {
+                      id: {
+                        title: "ID",
+                        type: "number",
+                        form: {
+                          show: false
+                        }
+                      },
+                      "cert.crt": {
+                        title: "证书",
+                        type: "textarea",
+                        form: {
+                          component: {
+                            rows: 4
+                          },
+                          rules: [{ required: true, message: "此项必填" }]
+                        }
+                      },
+                      "cert.key": {
+                        title: "私钥",
+                        type: "textarea",
+                        form: {
+                          component: {
+                            rows: 4
+                          },
+                          rules: [{ required: true, message: "此项必填" }]
+                        }
+                      }
+                    },
+                    form: {
+                      wrapper: {
+                        title: "上传自定义证书"
+                      }
+                    }
+                  }
+                };
+              }
+              const { crudOptions } = createCrudOptions();
+              const wrapperRef = await openCrudFormDialog({ crudOptions });
+            }
+          }
+        }
+      },
       rowHandle: {
         width: 200,
         fixed: "right",
@@ -176,7 +239,7 @@ export default function ({ crudExpose, context }: CreateCrudOptionsProps): Creat
           }
         },
         "pipeline.title": {
-          title: "已关联流水线",
+          title: "关联流水线",
           search: { show: false },
           type: "link",
           form: {
@@ -185,7 +248,13 @@ export default function ({ crudExpose, context }: CreateCrudOptionsProps): Creat
           column: {
             width: 350,
             sorter: true,
-            component: {}
+            component: {
+              on: {
+                onClick({ row }) {
+                  router.push({ path: "/certd/pipeline/detail", query: { id: row.pipelineId, editMode: "false" } });
+                }
+              }
+            }
           }
         }
       }

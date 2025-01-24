@@ -84,4 +84,15 @@ export class CertInfoController extends CrudController<CertInfoService> {
     });
     return this.ok(list);
   }
+
+  @Post('/upload', { summary: Constants.per.authOnly })
+  async upload(@Body(ALL) body: any) {
+    if (body.id) {
+      await this.service.checkUserId(body.id, this.getUserId());
+    }
+
+    const res = await this.service.upload(body);
+
+    return this.ok(res);
+  }
 }

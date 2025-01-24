@@ -10,9 +10,8 @@
 <script lang="ts" setup>
 import zhCN from "ant-design-vue/es/locale/zh_CN";
 import enUS from "ant-design-vue/es/locale/en_US";
-import { nextTick, provide, ref } from "vue";
+import { provide, ref } from "vue";
 import { usePageStore } from "/src/store/modules/page";
-import { useResourceStore } from "/src/store/modules/resource";
 import { useSettingStore } from "/@/store/modules/settings";
 import "dayjs/locale/zh-cn";
 import "dayjs/locale/en";
