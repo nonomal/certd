@@ -78,7 +78,8 @@ export default defineConfig({
               ]
             },
             { text: "演示教程", link: "/guide/tutorial.md" },
-            { text: "版本升级", link: "/guide/install/upgrade.md" }
+            { text: "版本升级", link: "/guide/install/upgrade.md" },
+            { text: "切换数据库", link: "/guide/install/database.md" }
           ]
         },
         {
