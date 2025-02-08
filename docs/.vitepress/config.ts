@@ -103,12 +103,12 @@ export default defineConfig({
             { text: "js脚本插件使用", link: "/guide/use/custom-script/index.md" },
             { text: "邮箱配置", link: "/guide/use/email/index.md" },
             { text: "IPv6支持", link: "/guide/use/setting/ipv6.md" },
-            { text: "如何贡献代码", link: "/guide/development/index.md" },
           ]
         },
         {
           text: "其他",
           items: [
+            { text: "贡献代码", link: "/guide/development/index.md" },
             { text: "更新日志", link: "/guide/changelogs/CHANGELOG.md" },
             { text: "镜像说明", link: "/guide/image.md" },
             { text: "联系我们", link: "/guide/contact/" },
