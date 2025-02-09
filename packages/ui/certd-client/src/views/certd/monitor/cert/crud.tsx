@@ -59,6 +59,7 @@ export default function ({ crudExpose, context }: CreateCrudOptionsProps): Creat
           add: {
             text: "上传自定义证书",
             type: "primary",
+            show: false,
             async click() {
               function createCrudOptions() {
                 return {
