@@ -106,6 +106,7 @@ export class CloudflareDnsProvider extends AbstractDnsProvider<CloudflareRecord>
       this.logger.info(`dns解析记录:${JSON.stringify(record)}`);
     }
     //本接口需要返回本次创建的dns解析记录，这个记录会在删除的时候用到
+    record.zone_id = zoneId;
     return record;
   }
 
