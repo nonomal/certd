@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.30.2](https://github.com/certd/certd/compare/v1.30.1...v1.30.2) (2025-02-09)
+
+### Bug Fixes
+
+* 当前置任务被删除时进行校验 ([c89686a](https://github.com/certd/certd/commit/c89686a2fda251484930f0ae715417b618c21690))
+
+### Performance Improvements
+
+* 上传自定义证书 ([75a38d9](https://github.com/certd/certd/commit/75a38d95f305b4271d9106babe7cffc1c89ae8f3))
+
 ## [1.30.1](https://github.com/certd/certd/compare/v1.30.0...v1.30.1) (2025-01-20)
 
 ### Performance Improvements
