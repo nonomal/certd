@@ -206,7 +206,24 @@ export class DeployCertToTencentCLB extends AbstractTaskPlugin {
     params.Domain = domain;
     const ret = await client.ModifyDomainAttributes(params);
     this.checkRet(ret);
-    this.logger.info('设置腾讯云CLB证书(sni)成功:', ret.RequestId, '->loadBalancerId:', this.loadBalancerId, 'listenerId', this.listenerId, 'domain:', domain);
+    this.logger.info(
+      `[${domain}] 设置腾讯云CLB证书(sni)任务已提交:taskId：${ret.RequestId}，loadBalancerId:${this.loadBalancerId}，listenerId:${this.listenerId}`
+    );
+
+    const requestId = ret.RequestId;
+    while (true) {
+      const statusRes = await client.DescribeTaskStatus({ TaskId: requestId });
+
+      if (statusRes.Status === 0) {
+        this.logger.info(`[${domain}] 腾讯云CLB证书(sni)设置成功`);
+        break;
+      } else if (statusRes.Status === 2) {
+        this.logger.info(`[${domain}] 腾讯云CLB证书(sni)设置进行中，请耐心等待`);
+      } else if (statusRes.Status === 1) {
+        throw new Error(`[${domain}] 腾讯云CLB证书(sni)设置失败:` + statusRes.Message);
+      }
+      await this.ctx.utils.sleep(5000);
+    }
     return ret;
   }
   appendTimeSuffix(name: string) {
