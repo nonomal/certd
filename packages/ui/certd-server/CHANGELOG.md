@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.30.4](https://github.com/certd/certd/compare/v1.30.3...v1.30.4) (2025-02-14)
+
+### Bug Fixes
+
+* 适配最新版1panel密码编码方式 ([78044c0](https://github.com/certd/certd/commit/78044c062e20cdd04f08baef9fb6745bf25eddcf))
+
 ## [1.30.3](https://github.com/certd/certd/compare/v1.30.2...v1.30.3) (2025-02-13)
 
 ### Bug Fixes
