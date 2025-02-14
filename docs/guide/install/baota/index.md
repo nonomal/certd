@@ -29,7 +29,7 @@
 点击确定，等待启动完成   
 ![](./images/2.png)
 
-> certd默认使用sqlite数据库，另外支持`mysql`和`postgresql`数据库，[点我了解如何切换其他数据库](../../database/)
+> certd默认使用sqlite数据库，另外支持`mysql`和`postgresql`数据库，[点我了解如何切换其他数据库]((../database))
 
 
 ## 二、访问应用

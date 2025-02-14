@@ -20,7 +20,7 @@ https://1panel.cn/docs/installation/online_installation/
    ![](./images/2.png)
 
 > 默认使用sqlite数据库，数据保存在`/data/certd`目录下，您可以手动备份该目录   
-> certd还支持`mysql`和`postgresql`数据库，[点我了解如何切换其他数据库](../../database/)
+> certd还支持`mysql`和`postgresql`数据库，[点我了解如何切换其他数据库](../database)
 
 3. 访问测试
 
