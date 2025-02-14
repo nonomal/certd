@@ -4,6 +4,7 @@ import { IsAccess, AccessInput, BaseAccess } from '@certd/pipeline';
   name: 'huawei',
   title: '华为云授权',
   desc: '',
+  icon: 'svg:icon-huawei',
 })
 export class HuaweiAccess extends BaseAccess {
   @AccessInput({
@@ -11,7 +12,7 @@ export class HuaweiAccess extends BaseAccess {
     component: {
       placeholder: 'accessKeyId',
     },
-    helper: '证书申请需要有dns解析权限',
+    helper: '证书申请需要有dns解析权限，前往[我的凭证-访问密钥](https://console.huaweicloud.com/iam/?region=cn-east-3#/mine/accessKey)获取',
     required: true,
   })
   accessKeyId = '';

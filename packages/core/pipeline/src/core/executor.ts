@@ -3,14 +3,20 @@ import { RunHistory, RunnableCollection } from "./run-history.js";
 import { AbstractTaskPlugin, PluginDefine, pluginRegistry, TaskInstanceContext, UserInfo } from "../plugin/index.js";
 import { ContextFactory, IContext } from "./context.js";
 import { IStorage } from "./storage.js";
-import { createAxiosService, hashUtils, logger, utils } from "../utils/index.js";
-import { Logger } from "log4js";
+import { createAxiosService, hashUtils, HttpRequestConfig, ILogger, logger, utils } from "@certd/basic";
 import { IAccessService } from "../access/index.js";
 import { RegistryItem } from "../registry/index.js";
 import { Decorator } from "../decorator/index.js";
-import { ICnameProxyService, IEmailService, IPluginConfigService } from "../service/index.js";
+import { ICnameProxyService, IEmailService, IPluginConfigService, IUrlService } from "../service/index.js";
 import { FileStore } from "./file-store.js";
 import { cloneDeep, forEach, merge } from "lodash-es";
+import { INotificationService } from "../notification/index.js";
+import { taskEmitterCreate } from "../service/emit.js";
+
+export type SysInfo = {
+  //系统标题
+  title?: string;
+};
 
 export type ExecutorOptions = {
   pipeline: Pipeline;
@@ -18,17 +24,21 @@ export type ExecutorOptions = {
   onChanged: (history: RunHistory) => Promise<void>;
   accessService: IAccessService;
   emailService: IEmailService;
+  notificationService: INotificationService;
   cnameProxyService: ICnameProxyService;
   pluginConfigService: IPluginConfigService;
+  urlService: IUrlService;
   fileRootDir?: string;
   user: UserInfo;
+  baseURL?: string;
+  sysInfo?: SysInfo;
 };
 
 export class Executor {
   pipeline: Pipeline;
   runtime!: RunHistory;
   contextFactory: ContextFactory;
-  logger: Logger;
+  logger: ILogger;
   pipelineContext!: IContext;
   currentStatusMap!: RunnableCollection;
   lastStatusMap!: RunnableCollection;
@@ -83,20 +93,30 @@ export class Executor {
         await this.onChanged(this.runtime);
       }, 5000);
 
-      await this.runWithHistory(this.pipeline, "pipeline", async () => {
+      const result = await this.runWithHistory(this.pipeline, "pipeline", async () => {
         return await this.runStages(this.pipeline);
       });
-      if (this.lastRuntime && this.lastRuntime.pipeline.status?.status === ResultType.error) {
-        await this.notification("turnToSuccess");
+      if (result === ResultType.success) {
+        if (this.lastRuntime && this.lastRuntime.pipeline.status?.status === ResultType.error) {
+          await this.notification("turnToSuccess");
+        } else {
+          await this.notification("success");
+        }
       }
-      await this.notification("success");
+      return result;
     } catch (e: any) {
       await this.notification("error", e);
       this.logger.error("pipeline 执行失败", e);
     } finally {
       clearInterval(intervalFlushLogId);
       await this.onChanged(this.runtime);
-      await this.pipelineContext.setObj("lastRuntime", this.runtime);
+      //保存之前移除logs
+      const lastRuntime: any = {
+        ...this.runtime,
+      };
+      delete lastRuntime.logs;
+      delete lastRuntime._loggers;
+      await this.pipelineContext.setObj("lastRuntime", lastRuntime);
       this.logger.info(`pipeline.${this.pipeline.id}  end`);
     }
   }
@@ -290,17 +310,29 @@ export class Executor {
     }
 
     const http = createAxiosService({ logger: currentLogger });
+    const download = async (config: HttpRequestConfig, savePath: string) => {
+      await utils.download({
+        http,
+        logger: currentLogger,
+        config,
+        savePath,
+      });
+    };
     const taskCtx: TaskInstanceContext = {
       pipeline: this.pipeline,
+      runtime: this.runtime,
       step,
       lastStatus,
       http,
+      download,
       logger: currentLogger,
       inputChanged,
       accessService: this.options.accessService,
       emailService: this.options.emailService,
       cnameProxyService: this.options.cnameProxyService,
       pluginConfigService: this.options.pluginConfigService,
+      notificationService: this.options.notificationService,
+      urlService: this.options.urlService,
       pipelineContext: this.pipelineContext,
       userContext: this.contextFactory.getContext("user", this.options.user.id),
       fileStore: new FileStore({
@@ -311,11 +343,15 @@ export class Executor {
       signal: this.abort.signal,
       utils,
       user: this.options.user,
+      emitter: taskEmitterCreate({
+        step,
+        pipeline: this.pipeline,
+      }),
     };
     instance.setCtx(taskCtx);
 
     await instance.onInstance();
-    await instance.execute();
+    const result = await instance.execute();
     //执行结果处理
     if (instance._result.clearLastStatus) {
       //是否需要清除所有状态
@@ -343,26 +379,30 @@ export class Executor {
       merge(vars, instance._result.pipelinePrivateVars);
       await this.pipelineContext.setObj("privateVars", vars);
     }
+
+    return result;
   }
 
   async notification(when: NotificationWhen, error?: any) {
     if (!this.pipeline.notifications) {
       return;
     }
+    const url = await this.options.urlService.getPipelineDetailUrl(this.pipeline.id, this.runtime.id);
     let subject = "";
     let content = "";
+    const errorMessage = error?.message;
     if (when === "start") {
-      subject = `【CertD】开始执行，【${this.pipeline.id}】${this.pipeline.title}`;
-      content = `buildId:${this.runtime.id}`;
+      subject = `开始执行，${this.pipeline.title}【${this.pipeline.id}】`;
+      content = `流水线ID:${this.pipeline.id}，运行ID:${this.runtime.id}`;
     } else if (when === "success") {
-      subject = `【CertD】执行成功，【${this.pipeline.id}】${this.pipeline.title}`;
-      content = `buildId:${this.runtime.id}`;
+      subject = `执行成功，${this.pipeline.title}【${this.pipeline.id}】`;
+      content = `流水线ID:${this.pipeline.id}，运行ID:${this.runtime.id}`;
     } else if (when === "turnToSuccess") {
-      subject = `【CertD】执行成功（错误转成功），【${this.pipeline.id}】${this.pipeline.title}`;
-      content = `buildId:${this.runtime.id}`;
+      subject = `执行成功（失败转成功），${this.pipeline.title}【${this.pipeline.id}】`;
+      content = `流水线ID:${this.pipeline.id}，运行ID:${this.runtime.id}`;
     } else if (when === "error") {
-      subject = `【CertD】执行失败，【${this.pipeline.id}】${this.pipeline.title}`;
-      content = `buildId:${this.runtime.id}\nerror:${error.message}`;
+      subject = `执行失败，${this.pipeline.title}【${this.pipeline.id}】`;
+      content = `流水线ID:${this.pipeline.id}，运行ID:${this.runtime.id}\n\n${this.currentStatusMap?.currentStep?.title} 执行失败\n\n错误详情:${error.message}`;
     } else {
       return;
     }
@@ -371,16 +411,39 @@ export class Executor {
       if (!notification.when.includes(when)) {
         continue;
       }
+
       if (notification.type === "email") {
         try {
           await this.options.emailService?.send({
-            userId: this.pipeline.userId,
             subject,
             content,
             receivers: notification.options.receivers,
           });
         } catch (e) {
           logger.error("send email error", e);
+        }
+      } else {
+        try {
+          //发送通知
+          await this.options.notificationService.send({
+            id: notification.notificationId,
+            useDefault: true,
+            useEmail: false,
+            logger: this.logger,
+            body: {
+              title: subject,
+              content,
+              userId: this.pipeline.userId,
+              pipeline: this.pipeline,
+              result: this.lastRuntime?.pipeline?.status,
+              pipelineId: this.pipeline.id,
+              historyId: this.runtime.id,
+              errorMessage,
+              url,
+            },
+          });
+        } catch (e) {
+          logger.error("send notification error", e);
         }
       }
     }

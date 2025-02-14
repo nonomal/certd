@@ -3,7 +3,7 @@ import cascaderData from "./cascader-data";
 import pcaDataLittle from "./pca-data-little";
 // @ts-ignore
 import { TreeNodesLazyLoader, getPcaData } from "./pcas-data";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 const openStatus = [
   { value: "1", label: "打开", color: "success", icon: "ion:radio-button-on" },
   { value: "2", label: "停止", color: "cyan" },

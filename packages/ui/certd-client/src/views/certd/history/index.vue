@@ -14,7 +14,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted } from "vue";
+import {onActivated, onMounted} from "vue";
 import { useFs } from "@fast-crud/fast-crud";
 import createCrudOptions from "./crud";
 import { message, Modal } from "ant-design-vue";
@@ -45,6 +45,9 @@ const handleBatchDelete = () => {
 
 // 页面打开后获取列表数据
 onMounted(() => {
+  crudExpose.doRefresh();
+});
+onActivated(() => {
   crudExpose.doRefresh();
 });
 </script>

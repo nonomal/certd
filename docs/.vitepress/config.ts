@@ -57,7 +57,8 @@ export default defineConfig({
     nav: [
       { text: "首页", link: "/" },
       { text: "指南", link: "/guide/" },
-      { text: "Demo体验", link: "https://certd.handsfree.work" }
+      { text: "商业版", link: "/comm/" },
+      { text: "Demo体验", link: "https://certd.handfree.work" }
     ],
     sidebar: {
       "/guide/": [
@@ -76,8 +77,9 @@ export default defineConfig({
                 { text: "源码部署", link: "/guide/install/source/" }
               ]
             },
-            { text: "演示教程", link: "/guide/tutorial.md" }
-
+            { text: "演示教程", link: "/guide/tutorial.md" },
+            { text: "版本升级", link: "/guide/install/upgrade.md" },
+            { text: "切换数据库", link: "/guide/install/database.md" }
           ]
         },
         {
@@ -98,12 +100,15 @@ export default defineConfig({
             { text: "忘记密码", link: "/guide/use/forgotpasswd/" },
             { text: "数据备份", link: "/guide/use/backup/" },
             { text: "Certd本身的证书更新", link: "/guide/use/https/index.md" },
-            { text: "如何贡献代码", link: "/guide/development/index.md" },
+            { text: "js脚本插件使用", link: "/guide/use/custom-script/index.md" },
+            { text: "邮箱配置", link: "/guide/use/email/index.md" },
+            { text: "IPv6支持", link: "/guide/use/setting/ipv6.md" },
           ]
         },
         {
           text: "其他",
           items: [
+            { text: "贡献代码", link: "/guide/development/index.md" },
             { text: "更新日志", link: "/guide/changelogs/CHANGELOG.md" },
             { text: "镜像说明", link: "/guide/image.md" },
             { text: "联系我们", link: "/guide/contact/" },
@@ -113,8 +118,20 @@ export default defineConfig({
 
           ]
         }
+      ],
+      "/comm/": [
+        {
+          text: "商业版",
+          items: [
+            { text: "支付宝配置", link: "/comm/payments/alipay.md" },
+            { text: "微信支付配置", link: "/comm/payments/wxpay.md" },
+            { text: "彩虹易支付配置", link: "/comm/payments/yizhifu.md" },
+          ]
+        }
       ]
+      ,
     },
+
     socialLinks: [
       { icon: "github", link: "https://github.com/certd/certd" }
     ],

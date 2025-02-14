@@ -1,5 +1,5 @@
 import { request } from "/src/api/service";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 import { PluginConfigBean, PluginSysSetting } from "/@/views/sys/plugin/api";
 const apiPrefix = "/pi/plugin";
 
@@ -29,7 +29,6 @@ function initPlugins(plugins: any) {
       plugin.input[key] = field;
     }
   }
-  console.log("plugins", plugins);
 }
 
 export async function GetList(query: any) {
@@ -54,6 +53,18 @@ export async function GetGroups(query: any) {
   }
   initPlugins(plugins);
   return groups;
+}
+
+export async function GetPluginDefine(type: string) {
+  const define = await request({
+    url: apiPrefix + "/getDefineByType",
+    method: "post",
+    data: {
+      type
+    }
+  });
+  initPlugins([define]);
+  return define;
 }
 
 export async function GetPluginConfig(req: { id?: number; name: string; type: string }): Promise<PluginConfigBean> {

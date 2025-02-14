@@ -3,16 +3,17 @@
  *
  * @namespace Client
  */
+import { createHash } from 'crypto';
+import  { getPemBodyAsB64u } from './crypto/index.js';
+import { log } from './logger.js';
+import HttpClient from './http.js';
+import AcmeApi from './api.js';
+import verify from './verify.js';
+import * as util from './util.js';
+import auto from './auto.js';
+import { CancelError } from './error.js';
 
-const { createHash } = require('crypto');
-const { getPemBodyAsB64u } = require('./crypto');
-const { log } = require('./logger');
-const HttpClient = require('./http');
-const AcmeApi = require('./api');
-const verify = require('./verify');
-const util = require('./util');
-const auto = require('./auto');
-const { CancelError } = require('./error');
+
 
 /**
  * ACME states
@@ -719,4 +720,4 @@ class AcmeClient {
 }
 
 /* Export client */
-module.exports = AcmeClient;
+export default  AcmeClient;

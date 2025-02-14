@@ -1,4 +1,4 @@
-import { Registry } from "../registry/index.js";
+import { createRegistry } from "../registry/index.js";
 
 // @ts-ignore
-export const accessRegistry = new Registry("access");
+export const accessRegistry = createRegistry("access");

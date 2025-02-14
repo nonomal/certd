@@ -8,7 +8,7 @@ import { HistoryLogEntity } from '../entity/history-log.js';
  * 证书申请
  */
 @Provide()
-@Scope(ScopeEnum.Singleton)
+@Scope(ScopeEnum.Request, { allowDowngrade: true })
 export class HistoryLogService extends BaseService<HistoryLogEntity> {
   @InjectEntityModel(HistoryLogEntity)
   repository: Repository<HistoryLogEntity>;

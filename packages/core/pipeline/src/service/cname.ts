@@ -3,9 +3,10 @@ import { IAccess } from "../access";
 export type CnameProvider = {
   id: any;
   domain: string;
-  dnsProviderType: string;
+  title?: string;
+  dnsProviderType?: string;
   access?: IAccess;
-  accessId: any;
+  accessId?: any;
 };
 
 export type CnameRecord = {
@@ -15,7 +16,9 @@ export type CnameRecord = {
   recordValue: string;
   cnameProvider: CnameProvider;
   status: string;
+  commonDnsProvider?: any;
 };
+
 export type ICnameProxyService = {
   getByDomain: (domain: string) => Promise<CnameRecord>;
 };

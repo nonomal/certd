@@ -1,16 +1,14 @@
 import { AbstractTaskPlugin, IsTaskPlugin, pluginGroups, RunStrategy, TaskInput, TaskOutput } from '@certd/pipeline';
-import { SshClient } from '../../lib/ssh.js';
 import { CertInfo, CertReader, CertReaderHandleContext } from '@certd/plugin-cert';
-import * as fs from 'fs';
-import { SshAccess } from '../../access/index.js';
 import dayjs from 'dayjs';
+import { SshAccess, SshClient } from '@certd/plugin-lib';
 
 @IsTaskPlugin({
   name: 'uploadCertToHost',
-  title: '部署证书到主机',
+  title: '主机-部署证书到SSH主机',
   icon: 'line-md:uploading-loop',
   group: pluginGroups.host.key,
-  desc: '上传证书到主机，然后执行部署脚本命令',
+  desc: 'SFTP上传证书到主机，然后SSH执行部署脚本命令',
   default: {
     strategy: {
       runStrategy: RunStrategy.SkipWhenSucceed,
@@ -18,65 +16,6 @@ import dayjs from 'dayjs';
   },
 })
 export class UploadCertToHostPlugin extends AbstractTaskPlugin {
-  @TaskInput({
-    title: '证书保存路径',
-    helper: '全链证书，需要有写入权限，路径要包含证书文件名，例如：/tmp/cert.pem',
-    component: {
-      placeholder: '/root/deploy/nginx/full_chain.pem',
-    },
-    rules: [{ type: 'filepath' }],
-  })
-  crtPath!: string;
-  @TaskInput({
-    title: '私钥保存路径',
-    helper: '需要有写入权限，路径要包含私钥文件名，例如：/tmp/cert.key',
-    component: {
-      placeholder: '/root/deploy/nginx/cert.key',
-    },
-    rules: [{ type: 'filepath' }],
-  })
-  keyPath!: string;
-
-  @TaskInput({
-    title: '中间证书保存路径',
-    helper: '路径要包含文件名，一般情况传上面两个文件即可，极少数情况需要这个中间证书',
-    component: {
-      placeholder: '/root/deploy/nginx/intermediate.pem',
-    },
-    rules: [{ type: 'filepath' }],
-  })
-  icPath!: string;
-
-  @TaskInput({
-    title: 'PFX证书保存路径',
-    helper: '用于IIS证书部署，需要有写入权限，路径要包含证书文件名，例如：/tmp/cert.pfx',
-    component: {
-      placeholder: '/root/deploy/nginx/cert.pfx',
-    },
-    rules: [{ type: 'filepath' }],
-  })
-  pfxPath!: string;
-
-  @TaskInput({
-    title: 'DER证书保存路径',
-    helper: '用于Apache证书部署，需要有写入权限，路径要包含证书文件名，例如：/tmp/cert.der',
-    component: {
-      placeholder: '/root/deploy/nginx/cert.der',
-    },
-    rules: [{ type: 'filepath' }],
-  })
-  derPath!: string;
-
-  // @TaskInput({
-  //   title: 'jks证书保存路径',
-  //   helper: '需要有写入权限，路径要包含证书文件名，例如：/tmp/cert.jks',
-  //   component: {
-  //     placeholder: '/root/deploy/nginx/cert.jks',
-  //   },
-  //   rules: [{ type: 'filepath' }],
-  // })
-  jksPath!: string;
-
   @TaskInput({
     title: '域名证书',
     helper: '请选择前置任务输出的域名证书',
@@ -87,6 +26,147 @@ export class UploadCertToHostPlugin extends AbstractTaskPlugin {
     required: true,
   })
   cert!: CertInfo;
+
+  @TaskInput({
+    title: '证书格式',
+    helper: '要部署的证书格式，支持pem、pfx、der、jks',
+    component: {
+      name: 'a-select',
+      options: [
+        { value: 'pem', label: 'pem，Nginx等大部分应用' },
+        { value: 'pfx', label: 'pfx，一般用于IIS' },
+        { value: 'der', label: 'der，一般用于Apache' },
+        { value: 'jks', label: 'jks，一般用于JAVA应用' },
+        { value: 'one', label: '证书私钥一体，crt+key简单合并为一个pem文件' },
+      ],
+    },
+    required: true,
+  })
+  certType!: string;
+
+  @TaskInput({
+    title: '证书保存路径',
+    helper: '填写应用原本的证书保存路径，路径要包含证书文件名，例如：/tmp/cert.pem',
+    component: {
+      placeholder: '/root/deploy/nginx/full_chain.pem',
+    },
+    mergeScript: `
+      return {
+        show: ctx.compute(({form})=>{
+          return form.certType === 'pem';
+        })
+      }
+    `,
+    required: true,
+    rules: [{ type: 'filepath' }],
+  })
+  crtPath!: string;
+  @TaskInput({
+    title: '私钥保存路径',
+    helper: '需要有写入权限，路径要包含私钥文件名，例如：/tmp/cert.key',
+    component: {
+      placeholder: '/root/deploy/nginx/cert.key',
+    },
+    mergeScript: `
+      return {
+        show: ctx.compute(({form})=>{
+          return form.certType === 'pem';
+        })
+      }
+    `,
+    required: true,
+    rules: [{ type: 'filepath' }],
+  })
+  keyPath!: string;
+
+  @TaskInput({
+    title: '中间证书保存路径',
+    helper: '路径要包含文件名，一般情况传上面两个文件即可，极少数情况需要这个中间证书',
+    component: {
+      placeholder: '/root/deploy/nginx/intermediate.pem',
+    },
+    mergeScript: `
+      return {
+        show: ctx.compute(({form})=>{
+          return form.certType === 'pem';
+        })
+      }
+    `,
+    rules: [{ type: 'filepath' }],
+  })
+  icPath!: string;
+
+  @TaskInput({
+    title: 'PFX证书保存路径',
+    helper: '填写应用原本的证书保存路径，路径要包含证书文件名，例如：D:\\iis\\cert.pfx',
+    component: {
+      placeholder: 'D:\\iis\\cert.pfx',
+    },
+    mergeScript: `
+      return {
+        show: ctx.compute(({form})=>{
+          return form.certType === 'pfx';
+        })
+      }
+    `,
+    required: true,
+    rules: [{ type: 'filepath' }],
+  })
+  pfxPath!: string;
+
+  @TaskInput({
+    title: 'DER证书保存路径',
+    helper: '填写应用原本的证书保存路径，路径要包含证书文件名，例如：/tmp/cert.der',
+    component: {
+      placeholder: '/root/deploy/apache/cert.der',
+    },
+    mergeScript: `
+      return {
+        show: ctx.compute(({form})=>{
+          return form.certType === 'der';
+        })
+      }
+    `,
+    required: true,
+    rules: [{ type: 'filepath' }],
+  })
+  derPath!: string;
+
+  @TaskInput({
+    title: 'jks证书保存路径',
+    helper: '填写应用原本的证书保存路径，路径要包含证书文件名，例如：/tmp/cert.jks',
+    component: {
+      placeholder: '/root/deploy/java_app/cert.jks',
+    },
+    mergeScript: `
+      return {
+        show: ctx.compute(({form})=>{
+          return form.certType === 'jks';
+        })
+      }
+    `,
+    required: true,
+    rules: [{ type: 'filepath' }],
+  })
+  jksPath!: string;
+
+  @TaskInput({
+    title: '一体证书保存路径',
+    helper: '填写应用原本的证书保存路径，路径要包含证书文件名，例如：/tmp/crt_key.pem',
+    component: {
+      placeholder: '/root/deploy/app/crt_key.pem',
+    },
+    mergeScript: `
+      return {
+        show: ctx.compute(({form})=>{
+          return form.certType === 'one';
+        })
+      }
+    `,
+    required: true,
+    rules: [{ type: 'filepath' }],
+  })
+  onePath!: string;
 
   @TaskInput({
     title: '主机登录配置',
@@ -162,26 +242,32 @@ export class UploadCertToHostPlugin extends AbstractTaskPlugin {
   })
   hostJksPath!: string;
 
+  @TaskOutput({
+    title: '一体证书保存路径',
+  })
+  hostOnePath!: string;
+
   async onInstance() {}
 
-  copyFile(srcFile: string, destFile: string) {
-    if (!srcFile || !destFile) {
-      this.logger.warn(`srcFile:${srcFile} 或 destFile:${destFile} 为空，不复制`);
-      return;
-    }
-    const dir = destFile.substring(0, destFile.lastIndexOf('/'));
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.copyFileSync(srcFile, destFile);
-    this.logger.info(`复制文件：${srcFile} => ${destFile}`);
-  }
+  // copyFile(srcFile: string, destFile: string) {
+  //   if (!srcFile || !destFile) {
+  //     this.logger.warn(`srcFile:${srcFile} 或 destFile:${destFile} 为空，不复制`);
+  //     return;
+  //   }
+  //   const dir = destFile.substring(0, destFile.lastIndexOf('/'));
+  //   if (!fs.existsSync(dir)) {
+  //     fs.mkdirSync(dir, { recursive: true });
+  //   }
+  //   fs.copyFileSync(srcFile, destFile);
+  //   this.logger.info(`复制文件：${srcFile} => ${destFile}`);
+  // }
   async execute(): Promise<void> {
-    const { crtPath, keyPath, cert, accessId } = this;
+    const { cert, accessId } = this;
+    let { crtPath, keyPath, icPath, pfxPath, derPath, jksPath, onePath } = this;
     const certReader = new CertReader(cert);
 
     const handle = async (opts: CertReaderHandleContext) => {
-      const { tmpCrtPath, tmpKeyPath, tmpDerPath, tmpJksPath, tmpPfxPath, tmpIcPath } = opts;
+      const { tmpCrtPath, tmpKeyPath, tmpDerPath, tmpJksPath, tmpPfxPath, tmpIcPath, tmpOnePath } = opts;
       // if (this.copyToThisHost) {
       //   this.logger.info('复制到目标路径');
       //   this.copyFile(tmpCrtPath, crtPath);
@@ -207,6 +293,7 @@ export class UploadCertToHostPlugin extends AbstractTaskPlugin {
 
       const transports: any = [];
       if (crtPath) {
+        crtPath = crtPath.trim();
         transports.push({
           localPath: tmpCrtPath,
           remotePath: crtPath,
@@ -214,40 +301,55 @@ export class UploadCertToHostPlugin extends AbstractTaskPlugin {
         this.logger.info(`上传证书到主机：${crtPath}`);
       }
       if (keyPath) {
+        keyPath = keyPath.trim();
         transports.push({
           localPath: tmpKeyPath,
           remotePath: keyPath,
         });
         this.logger.info(`上传私钥到主机：${keyPath}`);
       }
-      if (this.icPath) {
+      if (icPath) {
+        icPath = icPath.trim();
         transports.push({
           localPath: tmpIcPath,
-          remotePath: this.icPath,
+          remotePath: icPath,
         });
-        this.logger.info(`上传中间证书到主机：${this.icPath}`);
+        this.logger.info(`上传中间证书到主机：${icPath}`);
       }
-      if (this.pfxPath) {
+      if (pfxPath) {
+        pfxPath = pfxPath.trim();
         transports.push({
           localPath: tmpPfxPath,
-          remotePath: this.pfxPath,
+          remotePath: pfxPath,
         });
-        this.logger.info(`上传PFX证书到主机：${this.pfxPath}`);
+        this.logger.info(`上传PFX证书到主机：${pfxPath}`);
       }
-      if (this.derPath) {
+      if (derPath) {
+        derPath = derPath.trim();
         transports.push({
           localPath: tmpDerPath,
-          remotePath: this.derPath,
+          remotePath: derPath,
         });
-        this.logger.info(`上传DER证书到主机：${this.derPath}`);
+        this.logger.info(`上传DER证书到主机：${derPath}`);
       }
       if (this.jksPath) {
+        jksPath = jksPath.trim();
         transports.push({
           localPath: tmpJksPath,
-          remotePath: this.jksPath,
+          remotePath: jksPath,
         });
-        this.logger.info(`上传jks证书到主机：${this.jksPath}`);
+        this.logger.info(`上传jks证书到主机：${jksPath}`);
       }
+
+      if (this.onePath) {
+        this.logger.info(`上传一体证书到主机：${this.onePath}`);
+        onePath = this.onePath.trim();
+        transports.push({
+          localPath: tmpOnePath,
+          remotePath: this.onePath,
+        });
+      }
+
       this.logger.info('开始上传文件到服务器');
       await sshClient.uploadFiles({
         connectConf,
@@ -258,10 +360,11 @@ export class UploadCertToHostPlugin extends AbstractTaskPlugin {
       //输出
       this.hostCrtPath = crtPath;
       this.hostKeyPath = keyPath;
-      this.hostIcPath = this.icPath;
-      this.hostPfxPath = this.pfxPath;
-      this.hostDerPath = this.derPath;
-      this.hostJksPath = this.jksPath;
+      this.hostIcPath = icPath;
+      this.hostPfxPath = pfxPath;
+      this.hostDerPath = derPath;
+      this.hostJksPath = jksPath;
+      this.hostOnePath = onePath;
     };
 
     await certReader.readCertFile({
@@ -288,6 +391,8 @@ export class UploadCertToHostPlugin extends AbstractTaskPlugin {
         env['HOST_IC_PATH'] = this.hostIcPath || '';
         env['HOST_PFX_PATH'] = this.hostPfxPath || '';
         env['HOST_DER_PATH'] = this.hostDerPath || '';
+        env['HOST_JKS_PATH'] = this.hostJksPath || '';
+        env['HOST_ONE_PATH'] = this.hostOnePath || '';
       }
 
       const scripts = this.script.split('\n');

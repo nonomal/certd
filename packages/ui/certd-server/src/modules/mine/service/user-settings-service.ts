@@ -8,7 +8,7 @@ import { UserSettingsEntity } from '../entity/user-settings.js';
  * 授权
  */
 @Provide()
-@Scope(ScopeEnum.Singleton)
+@Scope(ScopeEnum.Request, { allowDowngrade: true })
 export class UserSettingsService extends BaseService<UserSettingsEntity> {
   @InjectEntityModel(UserSettingsEntity)
   repository: Repository<UserSettingsEntity>;

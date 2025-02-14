@@ -1,29 +1,15 @@
-# my_midway_project
+# certd-server
 
-## QuickStart
+## heap分析
 
-<!-- add docs here for user -->
+```shell
+# node_modules\@midwayjs\bootstrap\dist\bootstrap.js
+# 注释 137行
+// process.once('SIGINT', this.onSignal.bind(t
 
-see [midway docs][midway] for more detail.
-
-### Development
-
-```bash
-$ npm i
-$ npm run dev
-$ open http://localhost:7001/
 ```
 
-### Deploy
-
-```bash
-$ npm start
+```shell
+npm run heap
 ```
 
-### npm scripts
-
-- Use `npm run lint` to check code style.
-- Use `npm test` to run unit test.
-
-
-[midway]: https://midwayjs.org

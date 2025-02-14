@@ -44,8 +44,15 @@ export default {
           options.value = options.value.filter((item: any) => props.from.includes(item.type));
         }
       }
-      if (props.modelValue == null && options.value.length > 0) {
-        ctx.emit("update:modelValue", options.value[0].value);
+
+      if (props.modelValue != null) {
+        const found = options.value.find((item: any) => item.value === props.modelValue);
+        if (!found) {
+          ctx.emit("update:modelValue", undefined);
+        }
+      } else {
+        const value = options.value.length > 0 ? options.value[0].value : undefined;
+        ctx.emit("update:modelValue", value);
       }
     }
     onMounted(() => {

@@ -8,6 +8,7 @@ import { isDev } from '../../utils/env.js';
 @IsAccess({
   name: 'demo',
   title: '授权插件示例',
+  icon: 'clarity:plugin-line',
   desc: '',
 })
 export class DemoAccess extends BaseAccess {

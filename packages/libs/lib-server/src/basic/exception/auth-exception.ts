@@ -5,10 +5,6 @@ import { BaseException } from './base-exception.js';
  */
 export class AuthException extends BaseException {
   constructor(message) {
-    super(
-      'AuthException',
-      Constants.res.auth.code,
-      message ? message : Constants.res.auth.message
-    );
+    super('AuthException', Constants.res.auth.code, message ? message : Constants.res.auth.message);
   }
 }

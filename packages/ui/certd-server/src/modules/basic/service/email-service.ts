@@ -1,10 +1,14 @@
 import { Inject, Provide, Scope, ScopeEnum } from '@midwayjs/core';
 import type { EmailSend } from '@certd/pipeline';
-import { IEmailService, isPlus, logger } from '@certd/pipeline';
+import { IEmailService } from '@certd/pipeline';
+
+import { logger } from '@certd/basic';
+import { isComm, isPlus } from '@certd/plus-core';
+
 import nodemailer from 'nodemailer';
 import type SMTPConnection from 'nodemailer/lib/smtp-connection';
 import { UserSettingsService } from '../../mine/service/user-settings-service.js';
-import { PlusService, SysSettingsService } from '@certd/lib-server';
+import { PlusService, SysSettingsService, SysSiteInfo } from '@certd/lib-server';
 import { getEmailSettings } from '../../sys/settings/fix.js';
 
 export type EmailConfig = {
@@ -23,7 +27,7 @@ export type EmailConfig = {
   usePlus?: boolean;
 } & SMTPConnection.Options;
 @Provide()
-@Scope(ScopeEnum.Singleton)
+@Scope(ScopeEnum.Request, { allowDowngrade: true })
 export class EmailService implements IEmailService {
   @Inject()
   settingsService: UserSettingsService;
@@ -45,20 +49,17 @@ export class EmailService implements IEmailService {
      *   receivers: string[];
      */
 
-    await this.plusService.request({
-      url: '/activation/emailSend',
-      data: {
-        subject: email.subject,
-        text: email.content,
-        to: email.receivers,
-      },
-    });
+    await this.plusService.sendEmail(email);
   }
 
   /**
    */
   async send(email: EmailSend) {
     logger.info('sendEmail', email);
+
+    if (!email.receivers || email.receivers.length === 0) {
+      throw new Error('收件人不能为空');
+    }
 
     const emailConf = await getEmailSettings(this.sysSettingsService, this.settingsService);
 
@@ -67,7 +68,7 @@ export class EmailService implements IEmailService {
         //自动使用plus发邮件
         return await this.sendByPlus(email);
       }
-      throw new Error('email settings 还未设置');
+      throw new Error('邮件服务器还未设置');
     }
 
     if (emailConf.usePlus && isPlus()) {
@@ -79,10 +80,22 @@ export class EmailService implements IEmailService {
 
   private async sendByCustom(emailConfig: EmailConfig, email: EmailSend) {
     const transporter = nodemailer.createTransport(emailConfig);
+
+    let sysTitle = 'Certd';
+    if (isComm()) {
+      const siteInfo = await this.sysSettingsService.getSetting<SysSiteInfo>(SysSiteInfo);
+      if (siteInfo) {
+        sysTitle = siteInfo.title || sysTitle;
+      }
+    }
+    let subject = email.subject;
+    if (!subject.includes(`【${sysTitle}】`)) {
+      subject = `【${sysTitle}】${subject}`;
+    }
     const mailOptions = {
-      from: emailConfig.sender,
+      from: `${sysTitle} <${emailConfig.sender}>`,
       to: email.receivers.join(', '), // list of receivers
-      subject: email.subject,
+      subject: subject,
       text: email.content,
     };
     await transporter.sendMail(mailOptions);
@@ -90,7 +103,6 @@ export class EmailService implements IEmailService {
 
   async test(userId: number, receiver: string) {
     await this.send({
-      userId,
       receivers: [receiver],
       subject: '测试邮件,from certd',
       content: '测试邮件,from certd',

@@ -15,8 +15,12 @@
         <fs-values-format v-model="cnameRecord.status" :dict="statusDict" />
       </td>
       <td class="center">
-        <a-button v-if="cnameRecord.status !== 'valid'" type="primary" size="small" :loading="loading" @click="doVerify">点击验证</a-button>
-        <div v-else class="helper">不要删除CNAME</div>
+        <template v-if="cnameRecord.status !== 'valid'">
+          <a-button type="primary" size="small" :loading="loading" @click="doVerify">点击验证</a-button>
+          <cname-tip :record="cnameRecord"></cname-tip>
+        </template>
+
+        <div v-else class="helper" title="后续自动申请证书需要">不要删除CNAME</div>
       </td>
     </tr>
   </tbody>
@@ -27,12 +31,14 @@ import { CnameRecord, GetByDomain } from "/@/components/plugins/cert/domains-ver
 import { ref, watch } from "vue";
 import { dict } from "@fast-crud/fast-crud";
 import * as api from "./api.js";
+import CnameTip from "./cname-tip.vue";
 const statusDict = dict({
   data: [
     { label: "待设置CNAME", value: "cname", color: "warning" },
     { label: "验证中", value: "validating", color: "blue" },
     { label: "验证成功", value: "valid", color: "green" },
-    { label: "验证失败", value: "failed", color: "red" }
+    { label: "验证失败", value: "failed", color: "red" },
+    { label: "验证超时", value: "timeout", color: "red" }
   ]
 });
 
@@ -62,12 +68,24 @@ function onRecordChange() {
   });
 }
 
+let refreshIntervalId: any = null;
 async function doRefresh() {
   if (!props.domain) {
     return;
   }
   cnameRecord.value = await GetByDomain(props.domain);
   onRecordChange();
+
+  if (cnameRecord.value.status === "validating") {
+    if (!refreshIntervalId) {
+      refreshIntervalId = setInterval(async () => {
+        await doRefresh();
+      }, 9000);
+    }
+  } else {
+    clearInterval(refreshIntervalId);
+    refreshIntervalId = null;
+  }
 }
 
 watch(

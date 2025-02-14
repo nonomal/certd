@@ -4,7 +4,7 @@ import router from "../../router";
 import { LocalStorage } from "/src/utils/util.storage";
 // @ts-ignore
 import * as UserApi from "/src/api/modules/api.user";
-import { RegisterReq } from "/src/api/modules/api.user";
+import { RegisterReq, SmsLoginReq } from "/src/api/modules/api.user";
 // @ts-ignore
 import { LoginReq, UserInfoRes } from "/@/api/modules/api.user";
 import { message, Modal, notification } from "ant-design-vue";
@@ -63,15 +63,20 @@ export const useUserStore = defineStore({
     /**
      * @description: login
      */
-    async login(params: LoginReq): Promise<any> {
+    async login(loginType: string, params: LoginReq | SmsLoginReq): Promise<any> {
       try {
-        const data = await UserApi.login(params);
-        const { token, expire } = data;
+        let loginRes: any = null;
+        if (loginType === "sms") {
+          loginRes = await UserApi.loginBySms(params as SmsLoginReq);
+        } else {
+          loginRes = await UserApi.login(params as LoginReq);
+        }
 
+        const { token, expire } = loginRes;
         // save token
         this.setToken(token, expire);
         // get user info
-        return await this.onLoginSuccess(data);
+        return await this.onLoginSuccess(loginRes);
       } catch (error) {
         return null;
       }
@@ -80,6 +85,10 @@ export const useUserStore = defineStore({
       const userInfo = await UserApi.mine();
       this.setUserInfo(userInfo);
       return userInfo;
+    },
+
+    async loadUserInfo() {
+      await this.getUserInfoAction();
     },
 
     async onLoginSuccess(loginData: any) {

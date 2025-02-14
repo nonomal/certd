@@ -1,6 +1,6 @@
 <template>
   <a-layout class="fs-framework">
-    <a-layout-sider v-model:collapsed="asideCollapsed" :trigger="null" collapsible>
+    <a-layout-sider v-model:collapsed="asideCollapsed" :trigger="null" collapsible :width="210">
       <div class="header-logo">
         <img :src="siteInfo.logo" />
         <span v-if="!asideCollapsed" class="title">{{ siteInfo.title }}</span>
@@ -106,7 +106,7 @@
 
 <script lang="ts" setup>
 import { computed, onErrorCaptured, onMounted, ref } from "vue";
-import FsMenu from "./components/menu/index.jsx";
+import FsMenu from "./components/menu/index.vue";
 import FsLocale from "./components/locale/index.vue";
 import FsUserInfo from "./components/user-info/index.vue";
 import FsTabs from "./components/tabs/index.vue";
@@ -165,7 +165,7 @@ onMounted(async () => {
   await settingStore.checkUrlBound();
 });
 
-function menuClick(menu) {
+function menuClick(menu: any) {
   routerUtils.open(menu.path);
 }
 

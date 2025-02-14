@@ -12,14 +12,13 @@ import cors from '@koa/cors';
 import { GlobalExceptionMiddleware } from './middleware/global-exception.js';
 import { PreviewMiddleware } from './middleware/preview.js';
 import { AuthorityMiddleware } from './middleware/authority.js';
-import { logger } from '@certd/pipeline';
+import { logger } from '@certd/basic';
 import { ResetPasswdMiddleware } from './middleware/reset-passwd/middleware.js';
 import DefaultConfig from './config/config.default.js';
 import * as libServer from '@certd/lib-server';
 import * as commercial from '@certd/commercial-core';
 import * as upload from '@midwayjs/upload';
 import { setLogger } from '@certd/acme-client';
-
 process.on('uncaughtException', error => {
   console.error('未捕获的异常：', error);
   // 在这里可以添加日志记录、发送错误通知等操作

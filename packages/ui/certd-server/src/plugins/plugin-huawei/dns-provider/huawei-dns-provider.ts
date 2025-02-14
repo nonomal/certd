@@ -1,6 +1,7 @@
 import * as _ from 'lodash-es';
 import { AbstractDnsProvider, CreateRecordOptions, IsDnsProvider, RemoveRecordOptions } from '@certd/plugin-cert';
-import { Autowire, ILogger } from '@certd/pipeline';
+import { Autowire } from '@certd/pipeline';
+
 import { HuaweiAccess } from '../access/index.js';
 import { ApiRequestOptions, HuaweiYunClient } from '@certd/lib-huawei';
 
@@ -13,13 +14,12 @@ export type SearchRecordOptions = {
   title: '华为云',
   desc: '华为云DNS解析提供商',
   accessType: 'huawei',
+  icon: 'svg:icon-huawei',
 })
 export class HuaweiDnsProvider extends AbstractDnsProvider {
   client!: HuaweiYunClient;
   @Autowire()
   access!: HuaweiAccess;
-  @Autowire()
-  logger!: ILogger;
   domainEndpoint = 'https://domains-external.myhuaweicloud.com';
   dnsEndpoint = 'https://dns.cn-south-1.myhuaweicloud.com';
   async onInstance() {
@@ -103,6 +103,10 @@ export class HuaweiDnsProvider extends AbstractDnsProvider {
   async removeRecord(options: RemoveRecordOptions<any>): Promise<any> {
     const { fullRecord, value } = options.recordReq;
     const record = options.recordRes;
+    if (!record) {
+      this.logger.info('解析记录recordId为空，不执行删除', fullRecord, value);
+      return;
+    }
     const req: ApiRequestOptions = {
       url: `${this.dnsEndpoint}/v2/zones/${record.zone_id}/recordsets/${record.id}`,
       method: 'DELETE',

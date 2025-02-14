@@ -19,6 +19,5 @@ run/
 .clinic
 
 .env.pgpl.yaml
-
-tools/windows/*
-!tools/windows/*.zip
+tools/lego/*
+!tools/lego/readme.md

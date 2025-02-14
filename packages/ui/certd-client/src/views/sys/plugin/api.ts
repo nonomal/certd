@@ -75,7 +75,8 @@ export type PluginConfigBean = {
 };
 
 export type CertApplyPluginSysInput = {
-  googleCommonEabAccessId: number;
+  googleCommonEabAccessId?: number;
+  zerosslCommonEabAccessId?: number;
 };
 export type PluginSysSetting<T> = {
   sysSetting: {

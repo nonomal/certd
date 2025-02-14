@@ -23,9 +23,6 @@ export default function ({ crudExpose, context }: CreateCrudOptionsProps): Creat
   };
 
   const addRequest = async ({ form }: AddReq) => {
-    form.content = JSON.stringify({
-      title: form.title
-    });
     const res = await api.AddObj(form);
     return res;
   };

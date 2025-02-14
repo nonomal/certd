@@ -12,14 +12,21 @@
           <div>
             <span>您好，{{ userInfo.nickName || userInfo.username }}， 欢迎使用 【{{ siteInfo.title }}】</span>
           </div>
-          <div>
-            <a-tag color="green" class="flex-inline pointer"> <fs-icon icon="ion:time-outline" class="mr-5"></fs-icon> {{ now }}</a-tag>
-            <a-badge v-if="userStore.isAdmin" :dot="hasNewVersion">
-              <a-tag color="blue" class="flex-inline pointer" :title="'最新版本:' + latestVersion">
-                <fs-icon icon="ion:rocket-outline" class="mr-5"></fs-icon>
-                v{{ version }}
-              </a-tag>
-            </a-badge>
+          <div class="flex-o">
+            <a-tag color="green" class="flex-inline pointer m-0"> <fs-icon icon="ion:time-outline"></fs-icon> {{ now }}</a-tag>
+            <template v-if="userStore.isAdmin">
+              <a-divider type="vertical" />
+              <a-badge :dot="hasNewVersion">
+                <a-tag color="blue" class="flex-inline pointer m-0" :title="'最新版本:' + latestVersion" @click="openUpgradeUrl()">
+                  <fs-icon icon="ion:rocket-outline" class="mr-5"></fs-icon>
+                  v{{ version }}
+                </a-tag>
+              </a-badge>
+            </template>
+            <template v-if="settingsStore.isComm">
+              <a-divider type="vertical" />
+              <suite-card class="m-0"></suite-card>
+            </template>
           </div>
         </div>
       </div>
@@ -82,12 +89,12 @@
     <div v-if="pluginGroups" class="plugin-list">
       <a-card>
         <template #title>
-          支持的部署任务列表 <a-tag color="green">{{ pluginGroups.groups.all.plugins.length }}</a-tag>
+          已支持的部署任务总览 <a-tag color="green">{{ pluginGroups.groups.all.plugins.length }}</a-tag>
         </template>
         <a-row :gutter="10">
           <a-col v-for="item of pluginGroups.groups.all.plugins" :key="item.name" class="plugin-item-col" :span="4">
             <a-card>
-              <a-tooltip :title="item.desc">
+              <a-tooltip :title="item.desc" class="flex-between">
                 <div class="plugin-item pointer">
                   <div class="icon">
                     <fs-icon :icon="item.icon" class="font-size-16 color-blue" />
@@ -96,6 +103,7 @@
                     <div class="title">{{ item.title }}</div>
                   </div>
                 </div>
+                <div class="flex-o"><vip-button v-if="item.needPlus" mode="icon" class="" /></div>
               </a-tooltip>
             </a-card>
           </a-col>
@@ -118,7 +126,7 @@ import TutorialButton from "/@/components/tutorial/index.vue";
 import DayCount from "./charts/day-count.vue";
 import PieCount from "./charts/pie-count.vue";
 import ExpiringList from "./charts/expiring-list.vue";
-
+import SuiteCard from "./suite-card.vue";
 import { useSettingStore } from "/@/store/modules/settings";
 import { SiteInfo } from "/@/api/modules/api.basic";
 import { UserInfoRes } from "/@/api/modules/api.user";
@@ -135,15 +143,18 @@ const hasNewVersion = computed(() => {
   if (!latestVersion.value) {
     return false;
   }
+  if (latestVersion.value === version.value) {
+    return false;
+  }
   //分段比较
   const current = version.value.split(".");
   const latest = latestVersion.value.split(".");
   for (let i = 0; i < current.length; i++) {
-    if (parseInt(latest[i]) > parseInt(current[i])) {
-      return true;
+    if (parseInt(latest[i]) < parseInt(current[i])) {
+      return false;
     }
   }
-  return false;
+  return true;
 });
 async function loadLatestVersion() {
   latestVersion.value = await api.GetLatestVersion();
@@ -153,7 +164,7 @@ const settingStore = useSettingStore();
 const siteInfo: Ref<SiteInfo> = computed(() => {
   return settingStore.siteInfo;
 });
-
+const settingsStore = useSettingStore();
 const userStore = useUserStore();
 const userInfo: ComputedRef<UserInfoRes> = computed(() => {
   return userStore.getUserInfo;
@@ -205,10 +216,15 @@ async function loadPluginGroups() {
 
 const pluginGroups = ref();
 onMounted(async () => {
-  await loadLatestVersion();
-  await loadCount();
-  await loadPluginGroups();
+  await userStore.loadUserInfo();
+  loadLatestVersion();
+  loadCount();
+  loadPluginGroups();
 });
+
+function openUpgradeUrl() {
+  window.open("https://certd.docmirror.cn/guide/install/upgrade.html");
+}
 </script>
 
 <style lang="less">
@@ -265,6 +281,7 @@ onMounted(async () => {
           overflow: hidden;
           text-overflow: ellipsis;
           word-break: keep-all;
+          white-space: nowrap;
         }
       }
     }

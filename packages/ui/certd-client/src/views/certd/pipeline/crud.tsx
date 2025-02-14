@@ -10,12 +10,13 @@ import { env } from "/@/utils/util.env";
 import { useUserStore } from "/@/store/modules/user";
 import dayjs from "dayjs";
 import { useSettingStore } from "/@/store/modules/settings";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 import { useModal } from "/@/use/use-modal";
 import CertView from "./cert-view.vue";
 import { eachStages } from "./utils";
-
-export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOptionsProps): CreateCrudOptionsRet {
+import { createNotificationApi as createNotificationApi } from "../notification/api";
+import { mySuiteApi } from "/@/views/certd/suite/mine/api";
+export default function ({ crudExpose, context: { certdFormRef, groupDictRef, selectedRowKeys } }: CreateCrudOptionsProps): CreateCrudOptionsRet {
   const router = useRouter();
   const { t } = useI18n();
   const lastResRef = ref();
@@ -94,7 +95,23 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
     lastResRef.value = res;
     return res;
   };
-  function addCertdPipeline() {
+
+  const settingsStore = useSettingStore();
+  async function addCertdPipeline() {
+    //检查是否流水线数量超出限制
+    if (settingsStore.isComm && settingsStore.suiteSetting.enabled) {
+      //检查数量是否超限
+
+      const suiteDetail = await mySuiteApi.SuiteDetailGet();
+      const max = suiteDetail.pipelineCount.max;
+      if (max != -1 && max <= suiteDetail.pipelineCount.used) {
+        notification.error({
+          message: `对不起，您最多只能创建${max}条流水线，请购买或升级套餐`
+        });
+        return;
+      }
+    }
+
     certdFormRef.value.open(async ({ form }: any) => {
       // 添加certd pipeline
       const triggers = [];
@@ -102,27 +119,30 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
         triggers.push({ title: "定时触发", type: "timer", props: { cron: form.triggerCron } });
       }
       const notifications = [];
-      if (form.emailNotify) {
+      if (form.notification != null) {
         notifications.push({
-          type: "email",
-          when: ["error", "turnToSuccess"],
-          options: {
-            receivers: [form.email]
-          }
+          type: "custom",
+          when: ["error", "turnToSuccess", "success"],
+          notificationId: form.notification,
+          title: form.notificationTarget?.name || "自定义通知"
         });
       }
       let pipeline = {
         title: form.domains[0] + "证书自动化",
+        runnableType: "pipeline",
         stages: [
           {
             title: "证书申请阶段",
             maxTaskCount: 1,
+            runnableType: "stage",
             tasks: [
               {
                 title: "证书申请任务",
+                runnableType: "task",
                 steps: [
                   {
                     title: "申请证书",
+                    runnableType: "step",
                     input: {
                       renewDays: 35,
                       ...form
@@ -142,10 +162,18 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
       };
       pipeline = setRunnableIds(pipeline);
 
+      /**
+       *  // cert: 证书; backup: 备份; custom:自定义;
+       *   type: string;
+       *   // custom: 自定义; monitor: 监控;
+       *   from: string;
+       */
       const id = await api.Save({
         title: pipeline.title,
         content: JSON.stringify(pipeline),
-        keepHistoryCount: 30
+        keepHistoryCount: 30,
+        type: "cert",
+        from: "custom"
       });
       message.success("创建成功,请添加证书部署任务");
       router.push({ path: "/certd/pipeline/detail", query: { id, editMode: "true" } });
@@ -174,16 +202,17 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
   const downloadCert = async (row: any) => {
     const files = await api.GetFiles(row.id);
     model.success({
-      title: "文件下载",
+      title: "点击链接下载",
       maskClosable: true,
-      okText: "↑↑↑ 点击上面链接下载",
+      okText: "关闭",
       content: () => {
         const children = [];
         for (const file of files) {
           const downloadUrl = `${env.API}/pi/history/download?pipelineId=${row.id}&fileId=${file.id}`;
           children.push(
             <div>
-              <div>
+              <div class={"flex-o m-5"}>
+                <fs-icon icon={"ant-design:cloud-download-outlined"} class={"mr-5 fs-16"}></fs-icon>
                 <a href={downloadUrl} target={"_blank"}>
                   {file.filename}
                 </a>
@@ -192,12 +221,21 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
           );
         }
 
-        return <div class={"mt-3"}>{children}</div>;
+        if (children.length === 0) {
+          return <div>暂无文件下载</div>;
+        }
+
+        return (
+          <div class={"mt-3"}>
+            <div> {children}</div>
+          </div>
+        );
       }
     });
   };
   const userStore = useUserStore();
   const settingStore = useSettingStore();
+
   return {
     crudOptions: {
       request: {
@@ -205,6 +243,26 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
         addRequest,
         editRequest,
         delRequest
+      },
+      settings: {
+        plugins: {
+          //行选择插件，内置插件
+          rowSelection: {
+            //是否启用本插件
+            enabled: true,
+            order: -2,
+            //合并在用户配置crudOptions之前还是之后
+            before: true,
+            props: {
+              multiple: true,
+              crossPage: false,
+              selectedRowKeys,
+              onSelectedChanged(selected) {
+                console.log("已选择变化：", selected);
+              }
+            }
+          }
+        }
       },
       actionbar: {
         buttons: {
@@ -232,9 +290,16 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
       table: {
         scroll: { x: 1500 }
       },
+      tabs: {
+        name: "groupId",
+        show: true
+      },
       rowHandle: {
-        width: 300,
+        width: 200,
         fixed: "right",
+        dropdown: {
+          show: true
+        },
         buttons: {
           play: {
             order: -999,
@@ -275,8 +340,9 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
           },
           config: {
             order: 1,
-            title: "修改流水线内容",
+            title: "编辑流水线",
             type: "link",
+            dropdown: true,
             icon: "ant-design:edit-outlined",
             click({ row }) {
               router.push({ path: "/certd/pipeline/detail", query: { id: row.id, editMode: "true" } });
@@ -284,8 +350,9 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
           },
           edit: {
             order: 2,
-            title: "修改流水线运行配置",
-            icon: "ant-design:setting-outlined"
+            title: "修改配置/分组",
+            icon: "ant-design:setting-outlined",
+            dropdown: true
           },
           viewCert: {
             order: 3,
@@ -293,7 +360,7 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
             type: "link",
             icon: "ph:certificate",
             async click({ row }) {
-              viewCert(row);
+              await viewCert(row);
             }
           },
           download: {
@@ -302,11 +369,12 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
             title: "下载证书",
             icon: "ant-design:download-outlined",
             async click({ row }) {
-              downloadCert(row);
+              await downloadCert(row);
             }
           },
           remove: {
-            order: 5
+            order: 5,
+            dropdown: true
           }
         }
       },
@@ -348,6 +416,7 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
           type: "link",
           search: {
             show: true,
+            title: "关键字",
             component: {
               name: "a-input"
             }
@@ -449,7 +518,7 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
           },
           column: {
             sorter: true,
-            width: 80,
+            width: 120,
             align: "center"
           }
         },
@@ -494,17 +563,19 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
             }
           }
         },
-
-        keepHistoryCount: {
-          title: "历史记录保持数",
-          type: "number",
-          form: {
-            value: 20,
-            helper: "历史记录保持条数，多余的会被删除"
+        groupId: {
+          title: "分组",
+          type: "dict-select",
+          search: {
+            show: true
           },
+          dict: groupDictRef,
           column: {
             width: 130,
-            show: false
+            align: "center",
+            component: {
+              color: "auto"
+            }
           }
         },
         order: {
@@ -517,6 +588,18 @@ export default function ({ crudExpose, context: { certdFormRef } }: CreateCrudOp
           },
           form: {
             value: 0
+          }
+        },
+        keepHistoryCount: {
+          title: "历史记录保持数",
+          type: "number",
+          form: {
+            value: 20,
+            helper: "历史记录保持条数，多余的会被删除"
+          },
+          column: {
+            width: 130,
+            show: false
           }
         },
         createTime: {

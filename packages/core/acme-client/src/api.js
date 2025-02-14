@@ -1,9 +1,7 @@
 /**
  * ACME API client
  */
-
-const util = require('./util');
-const { log } = require('./logger');
+import  * as util  from './util.js';
 
 /**
  * AcmeApi
@@ -248,4 +246,4 @@ class AcmeApi {
 }
 
 /* Export API */
-module.exports = AcmeApi;
+export default AcmeApi;

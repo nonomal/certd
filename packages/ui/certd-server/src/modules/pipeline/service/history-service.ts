@@ -6,15 +6,17 @@ import { HistoryEntity } from '../entity/history.js';
 import { PipelineEntity } from '../entity/pipeline.js';
 import { HistoryDetail } from '../entity/vo/history-detail.js';
 import { HistoryLogService } from './history-log-service.js';
-import { FileItem, FileStore, logger, Pipeline, RunnableCollection } from '@certd/pipeline';
+import { FileItem, FileStore, Pipeline, RunnableCollection } from '@certd/pipeline';
+
 import dayjs from 'dayjs';
 import { DbAdapter } from '../../db/index.js';
+import { logger } from '@certd/basic';
 
 /**
  * 证书申请
  */
 @Provide()
-@Scope(ScopeEnum.Singleton)
+@Scope(ScopeEnum.Request, { allowDowngrade: true })
 export class HistoryService extends BaseService<HistoryEntity> {
   @InjectEntityModel(HistoryEntity)
   repository: Repository<HistoryEntity>;
@@ -39,6 +41,7 @@ export class HistoryService extends BaseService<HistoryEntity> {
     const res = await super.page(pageReq);
     for (const item of res.records) {
       item.fillPipelineTitle();
+      delete item.pipeline;
     }
     return res;
   }

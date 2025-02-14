@@ -5,7 +5,7 @@ import { RoleService } from './role-service.js';
  * 权限校验
  */
 @Provide()
-@Scope(ScopeEnum.Singleton)
+@Scope(ScopeEnum.Request, { allowDowngrade: true })
 export class AuthService {
   @Inject()
   roleService: RoleService;
@@ -27,6 +27,7 @@ export class AuthService {
     }
   }
 
+  //管理员有权限查看其他用户的数据
   async checkEntityUserId(ctx: any, service: any, id: any = 0, userKey = 'userId') {
     const isAdmin = await this.isAdmin(ctx);
     if (isAdmin) {

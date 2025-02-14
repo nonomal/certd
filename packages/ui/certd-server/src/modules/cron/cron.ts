@@ -1,5 +1,5 @@
 import parser from 'cron-parser';
-import { ILogger } from '@certd/pipeline';
+import { ILogger } from '@certd/basic';
 
 export type CronTaskReq = {
   /**

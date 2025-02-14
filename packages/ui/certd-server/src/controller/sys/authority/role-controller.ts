@@ -79,12 +79,7 @@ export class RoleController extends CrudController<RoleService> {
    * @param permissionIds
    */
   @Post('/authz', { summary: 'sys:auth:role:edit' })
-  async authz(
-    @Body('roleId')
-    roleId,
-    @Body('permissionIds')
-    permissionIds
-  ) {
+  async authz(@Body('roleId') roleId, @Body('permissionIds') permissionIds) {
     await this.service.authz(roleId, permissionIds);
     return this.ok(null);
   }

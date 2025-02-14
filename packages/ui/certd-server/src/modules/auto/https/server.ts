@@ -2,7 +2,7 @@ import https from 'node:https';
 import fs from 'fs';
 import { Application } from '@midwayjs/koa';
 import { createSelfCertificate } from './self-certificate.js';
-import { logger } from '@certd/pipeline';
+import { logger } from '@certd/basic';
 
 export type HttpsServerOptions = {
   enabled: boolean;

@@ -1,12 +1,12 @@
 import { IsTaskPlugin, pluginGroups, RunStrategy, TaskInput } from '@certd/pipeline';
-import { AbstractPlusTaskPlugin, TencentAccess } from '@certd/plugin-plus';
-import { TencentSslClient } from '../../lib/index.js';
+import { AbstractPlusTaskPlugin } from '@certd/plugin-plus';
 import dayjs from 'dayjs';
 import { remove } from 'lodash-es';
+import { TencentAccess, TencentSslClient } from '@certd/plugin-lib';
 
 @IsTaskPlugin({
   name: 'TencentDeleteExpiringCert',
-  title: '删除腾讯云即将过期证书',
+  title: '腾讯云-删除即将过期证书',
   icon: 'svg:icon-tencentcloud',
   group: pluginGroups.tencent.key,
   desc: '仅删除未使用的证书',
@@ -94,14 +94,15 @@ export class TencentDeleteExpiringCert extends AbstractPlusTaskPlugin {
     };
     const res = await sslClient.DescribeCertificates(params);
     let certificates = res?.Certificates;
-    if (!certificates && !certificates.length) {
+    if (!certificates && certificates.length === 0) {
       this.logger.info('没有找到证书');
       return;
     }
 
+    const lastDay = dayjs().add(this.expiringDays, 'day');
     certificates = certificates.filter((item: any) => {
       const endTime = item.CertEndTime;
-      return dayjs(endTime).add(this.expiringDays, 'day').isBefore(dayjs());
+      return dayjs(endTime).isBefore(lastDay);
     });
     for (const certificate of certificates) {
       this.logger.info(`证书ID:${certificate.CertificateId}, 过期时间:${certificate.CertEndTime}，Alias:${certificate.Alias}，证书域名:${certificate.Domain}`);

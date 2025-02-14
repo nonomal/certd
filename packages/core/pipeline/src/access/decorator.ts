@@ -1,9 +1,9 @@
 // src/decorator/memoryCache.decorator.ts
 import { AccessContext, AccessDefine, AccessInputDefine } from "./api.js";
 import { Decorator } from "../decorator/index.js";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 import { accessRegistry } from "./registry.js";
-import { http, logger, utils } from "../utils/index.js";
+import { http, logger, utils } from "@certd/basic";
 
 // 提供一个唯一 key
 export const ACCESS_CLASS_KEY = "pipeline:access";
@@ -56,6 +56,6 @@ export function newAccess(type: string, input: any, ctx?: AccessContext) {
       utils,
     };
   }
-  access.ctx = ctx;
+  access.setCtx(ctx);
   return access;
 }

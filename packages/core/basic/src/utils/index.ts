@@ -7,9 +7,16 @@ export * from './util.promise.js';
 export * from './util.hash.js';
 export * from './util.merge.js';
 export * from './util.cache.js';
+export * from './util.string.js';
+export * from './util.lock.js';
+export * from './util.mitter.js';
+export * from './util.id.js';
+export * from './util.domain.js';
+export * from './util.amount.js';
+import { stringUtils } from './util.string.js';
 import sleep from './util.sleep.js';
-import { http } from './util.request.js';
-import { nanoid } from 'nanoid';
+import { http, download } from './util.request.js';
+
 import { mergeUtils } from './util.merge.js';
 import { sp } from './util.sp.js';
 import { hashUtils } from './util.hash.js';
@@ -20,10 +27,15 @@ import { cache } from './util.cache.js';
 import dayjs from 'dayjs';
 import { domainUtils } from './util.domain.js';
 import { optionsUtils } from './util.options.js';
-
+import { amountUtils } from './util.amount.js';
+import { nanoid } from 'nanoid';
+import * as id from './util.id.js';
+import { locker } from './util.lock.js';
+import { mitter } from './util.mitter.js';
 export const utils = {
   sleep,
   http,
+  download,
   sp,
   hash: hashUtils,
   promises,
@@ -32,7 +44,12 @@ export const utils = {
   mergeUtils,
   cache,
   nanoid,
+  id,
   dayjs,
   domain: domainUtils,
   options: optionsUtils,
+  string: stringUtils,
+  locker,
+  mitter,
+  amount: amountUtils,
 };

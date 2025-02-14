@@ -4,6 +4,7 @@ import { IsAccess, AccessInput, BaseAccess } from "@certd/pipeline";
   name: "google",
   title: "google cloud",
   desc: "谷歌云授权",
+  icon: "flat-color-icons:google",
 })
 export class GoogleAccess extends BaseAccess {
   @AccessInput({

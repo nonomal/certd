@@ -4,13 +4,12 @@ import { MidwayConfig } from '@midwayjs/core';
 // import { fileURLToPath } from 'node:url';
 // // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = dirname(fileURLToPath(import.meta.url));
-// eslint-disable-next-line node/no-extraneous-import
 import { FlywayHistory } from '@certd/midway-flyway-js';
 import { UserEntity } from '../modules/sys/authority/entity/user.js';
 import { PipelineEntity } from '../modules/pipeline/entity/pipeline.js';
 //import { logger } from '../utils/logger';
 // load .env file in process.cwd
-import { mergeConfig } from './loader.js';
+import { loadDotEnv, mergeConfig } from './loader.js';
 import { libServerEntities } from '@certd/lib-server';
 import { commercialEntities } from '@certd/commercial-core';
 import { tmpdir } from 'node:os';
@@ -50,6 +49,7 @@ const development = {
   cron: {
     //启动时立即触发一次
     immediateTriggerOnce: false,
+    immediateTriggerSiteMonitor: false,
     //启动时仅注册admin（id=1）用户的
     onlyAdminUser: false,
   },
@@ -73,6 +73,7 @@ const development = {
         database: './data/db.sqlite',
         synchronize: false, // 如果第一次使用，不存在表，有同步的需求可以写 true
         logging: false,
+        highlightSql: false,
 
         // 配置实体模型 或者 entities: '/entity',
         entities: ['**/modules/**/entity/*.js', ...libServerEntities, ...commercialEntities, PipelineEntity, FlywayHistory, UserEntity],
@@ -123,6 +124,8 @@ const development = {
     contactLink: '',
   },
 } as MidwayConfig;
+loadDotEnv();
+
 mergeConfig(development, 'development');
 
 mergeConfig(development, env);

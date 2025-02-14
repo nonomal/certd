@@ -8,7 +8,7 @@
             <pi-status-show :status="item.node.status?.result" type="icon"></pi-status-show>
           </div>
         </template>
-        <div class="pi-task-view-logs" style="overflow: auto">
+        <div class="pi-task-view-logs" :class="'id-' + item.node.id" style="overflow: auto">
           <template v-for="(logItem, index) of item.logs" :key="index">
             <span :class="logItem.color"> {{ logItem.time }}</span> <span>{{ logItem.content }}</span>
           </template>
@@ -19,7 +19,7 @@
 </template>
 
 <script lang="ts">
-import { computed, inject, Ref, ref } from "vue";
+import { computed, inject, nextTick, Ref, ref, watch } from "vue";
 import { RunHistory } from "../../type";
 import PiStatusShow from "/@/views/certd/pipeline/pipeline/component/status-show.vue";
 
@@ -78,6 +78,36 @@ export default {
             }
             return [];
           });
+
+          watch(
+            () => {
+              return node.logs.value.length;
+            },
+            async () => {
+              let el = document.querySelector(`.pi-task-view-logs.id-${node.node.id}`);
+              if (!el) {
+                return;
+              }
+              //判断当前是否在底部
+              let isBottom = true;
+              if (el) {
+                isBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 5;
+                console.log("isBottom", isBottom, el.scrollHeight, el.scrollTop, el.clientHeight);
+              }
+              await nextTick();
+              el = document.querySelector(`.pi-task-view-logs.id-${node.node.id}`);
+              //如果在底部则滚动到底部
+              if (isBottom && el) {
+                el?.scrollTo({
+                  top: el.scrollHeight,
+                  behavior: "smooth"
+                });
+              }
+            },
+            {
+              immediate: true
+            }
+          );
         }
       }
 

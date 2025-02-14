@@ -3,12 +3,12 @@
  *
  * @namespace crypto
  */
+import  net from 'net';
+import { promisify } from 'util';
+import crypto from 'crypto';
+import asn1js from 'asn1js';
+import x509 from '@peculiar/x509';
 
-const net = require('net');
-const { promisify } = require('util');
-const crypto = require('crypto');
-const asn1js = require('asn1js');
-const x509 = require('@peculiar/x509');
 
 const randomInt = promisify(crypto.randomInt);
 const generateKeyPair = promisify(crypto.generateKeyPair);
@@ -67,7 +67,7 @@ function getKeyInfo(keyPem) {
  * ```
  */
 
-async function createPrivateRsaKey(modulusLength = 2048, encodingType = 'pkcs8') {
+export async function createPrivateRsaKey(modulusLength = 2048, encodingType = 'pkcs8') {
     const pair = await generateKeyPair('rsa', {
         modulusLength,
         privateKeyEncoding: {
@@ -79,7 +79,6 @@ async function createPrivateRsaKey(modulusLength = 2048, encodingType = 'pkcs8')
     return Buffer.from(pair.privateKey);
 }
 
-exports.createPrivateRsaKey = createPrivateRsaKey;
 
 /**
  * Alias of `createPrivateRsaKey()`
@@ -87,7 +86,7 @@ exports.createPrivateRsaKey = createPrivateRsaKey;
  * @function
  */
 
-exports.createPrivateKey = createPrivateRsaKey;
+export const createPrivateKey = createPrivateRsaKey;
 
 /**
  * Generate a private ECDSA key
@@ -106,7 +105,7 @@ exports.createPrivateKey = createPrivateRsaKey;
  * ```
  */
 
-exports.createPrivateEcdsaKey = async (namedCurve = 'P-256', encodingType = 'pkcs8') => {
+export const createPrivateEcdsaKey = async (namedCurve = 'P-256', encodingType = 'pkcs8') => {
     const pair = await generateKeyPair('ec', {
         namedCurve,
         privateKeyEncoding: {
@@ -130,7 +129,7 @@ exports.createPrivateEcdsaKey = async (namedCurve = 'P-256', encodingType = 'pkc
  * ```
  */
 
-exports.getPublicKey = (keyPem) => {
+export const getPublicKey = (keyPem) => {
     const info = getKeyInfo(keyPem);
 
     const publicKey = info.publicKey.export({
@@ -155,7 +154,7 @@ exports.getPublicKey = (keyPem) => {
  * ```
  */
 
-function getJwk(keyPem) {
+export function getJwk(keyPem) {
     const jwk = crypto.createPublicKey(keyPem).export({
         format: 'jwk',
     });
@@ -167,7 +166,6 @@ function getJwk(keyPem) {
     }, {});
 }
 
-exports.getJwk = getJwk;
 
 /**
  * Produce CryptoKeyPair and signing algorithm from a PEM encoded private key
@@ -215,7 +213,7 @@ async function getWebCryptoKeyPair(keyPem) {
  * @returns {string[]} Array of PEM objects including headers
  */
 
-function splitPemChain(chainPem) {
+export function splitPemChain(chainPem) {
     if (Buffer.isBuffer(chainPem)) {
         chainPem = chainPem.toString();
     }
@@ -225,7 +223,6 @@ function splitPemChain(chainPem) {
         .map((params) => x509.PemConverter.encode([params]));
 }
 
-exports.splitPemChain = splitPemChain;
 
 /**
  * Parse body of PEM encoded object and return a Base64URL string
@@ -235,7 +232,7 @@ exports.splitPemChain = splitPemChain;
  * @returns {string} Base64URL-encoded body
  */
 
-exports.getPemBodyAsB64u = (pem) => {
+export const getPemBodyAsB64u = (pem) => {
     const chain = splitPemChain(pem);
 
     if (!chain.length) {
@@ -286,7 +283,7 @@ function parseDomains(input) {
  * ```
  */
 
-exports.readCsrDomains = (csrPem) => {
+export const readCsrDomains = (csrPem) => {
     if (Buffer.isBuffer(csrPem)) {
         csrPem = csrPem.toString();
     }
@@ -315,7 +312,7 @@ exports.readCsrDomains = (csrPem) => {
  * ```
  */
 
-exports.readCertificateInfo = (certPem) => {
+export const readCertificateInfo = (certPem) => {
     if (Buffer.isBuffer(certPem)) {
         certPem = certPem.toString();
     }
@@ -449,7 +446,7 @@ function createSubjectAltNameExtension(altNames) {
  * ```
  */
 
-exports.createCsr = async (data, keyPem = null) => {
+export const createCsr = async (data, keyPem = null) => {
     if (!keyPem) {
         keyPem = await createPrivateRsaKey(data.keySize);
     }
@@ -520,7 +517,7 @@ exports.createCsr = async (data, keyPem = null) => {
  * ```
  */
 
-exports.createAlpnCertificate = async (authz, keyAuthorization, keyPem = null) => {
+export const createAlpnCertificate = async (authz, keyAuthorization, keyPem = null) => {
     if (!keyPem) {
         keyPem = await createPrivateRsaKey();
     }
@@ -583,7 +580,7 @@ exports.createAlpnCertificate = async (authz, keyAuthorization, keyPem = null) =
  * @returns {boolean} True when valid
  */
 
-exports.isAlpnCertificateAuthorizationValid = (certPem, keyAuthorization) => {
+export const isAlpnCertificateAuthorizationValid = (certPem, keyAuthorization) => {
     const expected = crypto.createHash('sha256').update(keyAuthorization).digest('hex');
 
     /* Attempt to locate ALPN extension */

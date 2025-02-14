@@ -62,7 +62,7 @@ export type FileItem = {
   path: string;
 };
 export type Runnable = {
-  id: string;
+  id: any;
   title: string;
   strategy?: RunnableStrategy;
   runnableType?: string; // pipeline, stage, task , step
@@ -83,6 +83,9 @@ export type Notification = {
   type: NotificationType;
   when: NotificationWhen[];
   options: EmailOptions;
+  notificationId: number;
+  title: string;
+  subType: string;
 };
 
 export type Pipeline = Runnable & {

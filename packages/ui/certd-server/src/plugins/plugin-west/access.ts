@@ -8,6 +8,7 @@ import { IsAccess, AccessInput, BaseAccess } from '@certd/pipeline';
   name: 'west',
   title: '西部数码授权',
   desc: '',
+  icon: 'tabler:map-west',
 })
 export class WestAccess extends BaseAccess {
   /**

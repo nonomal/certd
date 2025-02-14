@@ -1,10 +1,9 @@
-import { ValidateException } from './exception/index.js';
-import * as _ from 'lodash-es';
-import { PermissionException } from './exception/index.js';
+import { PermissionException, ValidateException } from './exception/index.js';
 import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Inject } from '@midwayjs/core';
 import { TypeORMDataSourceManager } from '@midwayjs/typeorm';
 import { EntityManager } from 'typeorm/entity-manager/EntityManager.js';
+import { FindManyOptions } from 'typeorm';
 
 export type PageReq<T = any> = {
   page?: { offset: number; limit: number };
@@ -17,6 +16,7 @@ export type ListReq<T = any> = {
     asc: boolean;
   };
   buildQuery?: (bq: SelectQueryBuilder<any>) => void;
+  select?: any;
 };
 
 /**
@@ -55,7 +55,7 @@ export abstract class BaseService<T> {
    * 非分页查询
    * @param options
    */
-  async find(options) {
+  async find(options: FindManyOptions<T>) {
     return await this.getRepository().find(options);
   }
 
@@ -101,7 +101,7 @@ export abstract class BaseService<T> {
    * 新增|修改
    * @param param 数据
    */
-  async addOrUpdate(param) {
+  async addOrUpdate(param: any) {
     await this.getRepository().save(param);
   }
 
@@ -109,7 +109,7 @@ export abstract class BaseService<T> {
    * 新增
    * @param param 数据
    */
-  async add(param) {
+  async add(param: any) {
     const now = new Date();
     param.createTime = now;
     param.updateTime = now;
@@ -124,7 +124,7 @@ export abstract class BaseService<T> {
    * 修改
    * @param param 数据
    */
-  async update(param) {
+  async update(param: any) {
     if (!param.id) throw new ValidateException('id 不能为空');
     param.updateTime = new Date();
     await this.addOrUpdate(param);
@@ -150,6 +150,7 @@ export abstract class BaseService<T> {
       page.limit = 20;
     }
     const qb = this.buildListQuery(pageReq);
+
     qb.offset(page.offset).limit(page.limit);
     const list = await qb.getMany();
     const total = await qb.getCount();
@@ -164,28 +165,27 @@ export abstract class BaseService<T> {
   private buildListQuery(listReq: ListReq<T>) {
     const { query, sort, buildQuery } = listReq;
     const qb = this.getRepository().createQueryBuilder('main');
-    if (sort && sort.prop) {
-      qb.addOrderBy('main.' + sort.prop, sort.asc ? 'ASC' : 'DESC');
-    }
-    qb.addOrderBy('id', 'DESC');
-    //根据bean query
     if (query) {
-      let whereSql = '';
-      let index = 0;
-      _.forEach(query, (value, key) => {
-        if (!value) {
-          return;
+      const keys = Object.keys(query);
+      for (const key of keys) {
+        const value = query[key];
+        if (value == null) {
+          delete query[key];
         }
-        if (index !== 0) {
-          whereSql += ' and ';
+      }
+      qb.where(query);
+    }
+    if (sort && sort.prop) {
+      const found = this.getRepository().metadata.columns.find(column => {
+        if (column.propertyName === sort.prop) {
+          return true;
         }
-        whereSql += ` main.${key} = :${key} `;
-        index++;
       });
-      if (index > 0) {
-        qb.andWhere(whereSql, query);
+      if (found) {
+        qb.addOrderBy('main.' + sort.prop, sort.asc ? 'ASC' : 'DESC');
       }
     }
+    qb.addOrderBy('id', 'DESC');
     //自定义query
     if (buildQuery) {
       buildQuery(qb);

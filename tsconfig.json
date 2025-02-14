@@ -1,5 +1,5 @@
 {
-  "compileOnSave": false,
+  "compileOnSave": true,
   "compilerOptions": {
     // 这样就可以对 `this` 上的数据属性进行更严格的推断`
     "noImplicitAny": true,
@@ -7,7 +7,6 @@
     "target": "esnext",
     "module": "esnext",
     "strict": true,
-    "jsx": "preserve",
     "importHelpers": true,
     "moduleResolution": "node",
     "experimentalDecorators": true,
@@ -15,27 +14,9 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strictNullChecks" :false,
-    "sourceMap": true,
+    "inlineSourceMap": true,
     "baseUrl": ".",
-    "outDir": "./dist/ts",
-    "types": [
-      "vite/client",
-      "mocha",
-      "chai",
-      "node",
-      "unplugin-vue-define-options/macros-global"
-    ],
-    "paths": {
-      "/@/*": ["src/*"],
-      "/src/*": ["src/*"],
-      "/#/*": ["types/*"]
-    },
-    "lib": [
-      "esnext",
-      "dom",
-      "dom.iterable",
-      "scripthost"
-    ]
+    "outDir": "dist",
   },
   "include": [
     "src/**/*.ts",

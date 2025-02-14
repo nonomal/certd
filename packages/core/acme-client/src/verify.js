@@ -2,13 +2,15 @@
  * ACME challenge verification
  */
 
-const dns = require('dns').promises;
-const https = require('https');
-const { log } = require('./logger');
-const axios = require('./axios');
-const util = require('./util');
-const { isAlpnCertificateAuthorizationValid } = require('./crypto');
+import dnsSdk from "dns"
+import https from 'https'
+import {log} from './logger.js'
+import axios from './axios.js'
+import * as util from './util.js'
+import {isAlpnCertificateAuthorizationValid} from './crypto/index.js'
 
+
+const dns = dnsSdk.promises
 /**
  * Verify ACME HTTP challenge
  *
@@ -79,7 +81,7 @@ async function walkDnsChallengeRecord(recordName, resolver = dns) {
     }
 }
 
-async function walkTxtRecord(recordName) {
+export async function walkTxtRecord(recordName) {
     try {
         /* Default DNS resolver first */
         log('Attempting to resolve TXT with default DNS resolver first');
@@ -153,9 +155,8 @@ async function verifyTlsAlpnChallenge(authz, challenge, keyAuthorization) {
  * Export API
  */
 
-module.exports = {
+export default {
     'http-01': verifyHttpChallenge,
     'dns-01': verifyDnsChallenge,
     'tls-alpn-01': verifyTlsAlpnChallenge,
-    walkTxtRecord,
 };

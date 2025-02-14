@@ -10,13 +10,14 @@
           @tab-click="handleClick"
           @edit="handleTabEdit"
         >
-          <a-tab-pane
-            v-for="item in page.getOpened"
-            :key="item.fullPath"
-            :tab="item.meta?.title || '未命名'"
-            :name="item.fullPath"
-            :closable="isTabClosable(item)"
-          />
+          <a-tab-pane v-for="item in page.getOpened" :key="item.fullPath" :name="item.fullPath" :closable="isTabClosable(item)">
+            <template #tab>
+              <span class="flex-o">
+                <fs-icon :icon="item.meta.icon" class="mr-5"></fs-icon>
+                {{ item.meta?.title || "未命名" }}
+              </span>
+            </template>
+          </a-tab-pane>
         </a-tabs>
         <!--        <fs-contextmenu v-model:open="contextmenuFlag" :x="contentmenuX" :y="contentmenuY">-->
         <!--          <fs-contextmenu-list-->
@@ -76,9 +77,7 @@ export default {
       closeAll: pageStore.closeAll,
       openedSort: pageStore.openedSort
     };
-    console.log("opened", pageStore.getOpened);
     const computeOpened = computed(() => {
-      console.log("opened", pageStore.getOpened);
       return pageStore.getOpened;
     });
 

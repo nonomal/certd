@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { fileUtils } from "../utils/index.js";
+import { fileUtils } from "@certd/basic";
 
 export interface IStorage {
   get(scope: string, namespace: string, version: string, key: string): Promise<string | null>;

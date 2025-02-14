@@ -1,4 +1,4 @@
-import { logger } from '@certd/pipeline';
+import { logger } from '@certd/basic';
 import fs from 'fs';
 // @ts-ignore
 import forge from 'node-forge';

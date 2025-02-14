@@ -15,6 +15,7 @@ import { useRoute } from "vue-router";
 import { PipelineDetail, PipelineOptions, PluginGroups, RunHistory } from "./pipeline/type";
 import { TourProps } from "ant-design-vue";
 import { LocalStorage } from "/@/utils/util.storage";
+import { useUserStore } from "/@/store/modules/user";
 
 defineOptions({
   name: "PipelineDetail"
@@ -29,6 +30,7 @@ const pipelineOptions: PipelineOptions = {
     return {
       pipeline: {
         id: detail.pipeline.id,
+        userId: detail.pipeline.userId,
         stages: [],
         triggers: [],
         ...JSON.parse(detail.pipeline.content || "{}")
@@ -66,7 +68,7 @@ const pipelineOptions: PipelineOptions = {
 const pipelineOptionsRef: Ref<PipelineOptions> = ref(pipelineOptions);
 
 const editMode = ref(false);
-if (route.query.editMode !== "false") {
+if (route.query.editMode === "true") {
   editMode.value = true;
 }
 
@@ -124,7 +126,11 @@ function useTour() {
 
 const { tour, tourHandleOpen } = useTour();
 
+const userStore = useUserStore();
 async function onLoaded(pipeline: PipelineDetail) {
+  if (pipeline.pipeline?.userId !== userStore.getUserInfo?.id) {
+    return;
+  }
   const count = LocalStorage.get("pipeline-count") ?? 0;
   if (count > 1) {
     return;
@@ -135,7 +141,7 @@ async function onLoaded(pipeline: PipelineDetail) {
   }
   const res = await api.GetCount();
   LocalStorage.set("pipeline-count", res.count);
-  if (res.count <= 1) {
+  if (res.count <= 1 && editMode.value === true) {
     await nextTick();
     tourHandleOpen(true);
   }

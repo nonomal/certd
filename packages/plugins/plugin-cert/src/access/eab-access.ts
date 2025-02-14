@@ -4,6 +4,7 @@ import { IsAccess, AccessInput, BaseAccess } from "@certd/pipeline";
   name: "eab",
   title: "EAB授权",
   desc: "ZeroSSL证书申请需要EAB授权",
+  icon: "ic:outline-lock",
 })
 export class EabAccess extends BaseAccess {
   @AccessInput({
@@ -34,7 +35,7 @@ export class EabAccess extends BaseAccess {
     },
     rules: { type: "email", message: "请输入正确的邮箱" },
     helper: "Google的EAB申请证书，更换邮箱会导致EAB失效，可以在此处绑定一个邮箱避免此问题",
-    required: false,
+    required: true,
   })
   email = "";
 }

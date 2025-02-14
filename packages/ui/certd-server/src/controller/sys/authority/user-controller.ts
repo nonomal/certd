@@ -4,6 +4,7 @@ import { CrudController } from '@certd/lib-server';
 import { RoleService } from '../../../modules/sys/authority/service/role-service.js';
 import { PermissionService } from '../../../modules/sys/authority/service/permission-service.js';
 import { Constants } from '@certd/lib-server';
+import { In } from 'typeorm';
 
 /**
  * 系统用户
@@ -21,6 +22,24 @@ export class UserController extends CrudController<UserService> {
 
   getService() {
     return this.service;
+  }
+
+  @Post('/getSimpleUserByIds', { summary: 'sys:auth:user:add' })
+  async getSimpleUserByIds(@Body('ids') ids: number[]) {
+    const users = await this.service.find({
+      select: {
+        id: true,
+        username: true,
+        nickName: true,
+        mobile: true,
+        phoneCode: true,
+      },
+      where: {
+        id: In(ids),
+      },
+    });
+
+    return this.ok(users);
   }
 
   @Post('/page', { summary: 'sys:auth:user:view' })

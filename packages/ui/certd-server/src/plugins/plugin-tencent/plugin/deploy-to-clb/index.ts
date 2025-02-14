@@ -1,13 +1,12 @@
-import { AbstractTaskPlugin, IsTaskPlugin, pluginGroups, RunStrategy, TaskInput, utils } from '@certd/pipeline';
-import { TencentAccess } from '@certd/plugin-plus';
+import { AbstractTaskPlugin, IsTaskPlugin, pluginGroups, RunStrategy, TaskInput } from '@certd/pipeline';
 import dayjs from 'dayjs';
-
+import { TencentAccess } from '@certd/plugin-lib';
 @IsTaskPlugin({
   name: 'DeployCertToTencentCLB',
-  title: '部署到腾讯云CLB',
+  title: '腾讯云-部署到CLB',
   icon: 'svg:icon-tencentcloud',
   group: pluginGroups.tencent.key,
-  desc: '暂时只支持单向认证证书，暂时只支持通用负载均衡，必须开启sni',
+  desc: '暂时只支持单向认证证书，暂时只支持通用负载均衡',
   default: {
     strategy: {
       runStrategy: RunStrategy.SkipWhenSucceed,
@@ -60,16 +59,22 @@ export class DeployCertToTencentCLB extends AbstractTaskPlugin {
 
   @TaskInput({
     title: '监听器ID',
-    helper: '如果没有配置，则根据域名或负载均衡id匹配监听器',
+    required: true,
   })
   listenerId!: string;
 
   @TaskInput({
     title: '域名',
-    required: true,
-    helper: '要更新的支持https的负载均衡的域名',
+    required: false,
+    component: {
+      name: 'a-select',
+      vModel: 'value',
+      open: false,
+      mode: 'tags',
+    },
+    helper: '如果开启了sni，则此项必须填写，未开启，则不要填写',
   })
-  domain!: string;
+  domain!: string | string[];
 
   @TaskInput({
     title: '域名证书',
@@ -123,33 +128,49 @@ export class DeployCertToTencentCLB extends AbstractTaskPlugin {
 
   async execute(): Promise<void> {
     const client = this.client;
-    const lastCertId = await this.getCertIdFromProps(client);
-    if (!this.domain) {
+
+    if (!this.domain || this.domain.length === 0) {
       await this.updateListener(client);
     } else {
-      await this.updateByDomainAttr(client);
+      const domains = Array.isArray(this.domain) ? this.domain : [this.domain];
+      for (const domain of domains) {
+        this.logger.info(`开始更新域名证书:${domain},请确保已经开启了sni`);
+        // const lastCertId = await this.getCertIdFromProps(client, domain);
+
+        await this.updateByDomainAttr(client, domain);
+
+        // 不要做检查，相同的证书，不会生成新的证书id
+        // const checkDeployed = async (wait = 5) => {
+        //   await this.ctx.utils.sleep(wait * 1000);
+        //   this.logger.info(`等待${wait}秒`);
+        //   const newCertId = await this.getCertIdFromProps(client, domain);
+        //   this.logger.info(`oldCertId:${lastCertId} , newCertId:${newCertId}`);
+        //   if ((lastCertId && newCertId === lastCertId) || (!lastCertId && !newCertId)) {
+        //     return false;
+        //   }
+        //   this.logger.info('腾讯云证书ID:', newCertId);
+        //   return true;
+        // };
+        // let count = 0;
+        // while (true) {
+        //   count++;
+        //   const res = await checkDeployed(5);
+        //   if (res) {
+        //     break;
+        //   }
+        //   if (count > 6) {
+        //     this.logger.warn('等待超时，可能证书未部署成功');
+        //   }
+        // }
+      }
     }
 
-    try {
-      await utils.sleep(2000);
-      let newCertId = await this.getCertIdFromProps(client);
-      if ((lastCertId && newCertId === lastCertId) || (!lastCertId && !newCertId)) {
-        await utils.sleep(2000);
-        newCertId = await this.getCertIdFromProps(client);
-      }
-      if (newCertId === lastCertId) {
-        return;
-      }
-      this.logger.info('腾讯云证书ID:', newCertId);
-    } catch (e) {
-      this.logger.warn('查询腾讯云证书失败', e);
-    }
     return;
   }
 
-  async getCertIdFromProps(client: any) {
-    const listenerRet = await this.getListenerList(client, this.loadBalancerId, [this.listenerId]);
-    return this.getCertIdFromListener(listenerRet[0], this.domain);
+  async getCertIdFromProps(client: any, domain: string) {
+    const listenerRet = await this.getListenerList(client, this.loadBalancerId, this.listenerId ? [this.listenerId] : null);
+    return this.getCertIdFromListener(listenerRet[0], domain);
   }
 
   getCertIdFromListener(listener: any, domain: string) {
@@ -179,21 +200,30 @@ export class DeployCertToTencentCLB extends AbstractTaskPlugin {
     return ret;
   }
 
-  async updateByDomainAttr(client: any) {
+  async updateByDomainAttr(client: any, domain) {
     const params: any = this.buildProps();
-    params.Domain = this.domain;
+
+    params.Domain = domain;
     const ret = await client.ModifyDomainAttributes(params);
     this.checkRet(ret);
     this.logger.info(
-      '设置腾讯云CLB证书(sni)成功:',
-      ret.RequestId,
-      '->loadBalancerId:',
-      this.loadBalancerId,
-      'listenerId',
-      this.listenerId,
-      'domain:',
-      this.domain
+      `[${domain}] 设置腾讯云CLB证书(sni)任务已提交:taskId：${ret.RequestId}，loadBalancerId:${this.loadBalancerId}，listenerId:${this.listenerId}`
     );
+
+    const requestId = ret.RequestId;
+    while (true) {
+      const statusRes = await client.DescribeTaskStatus({ TaskId: requestId });
+
+      if (statusRes.Status === 0) {
+        this.logger.info(`[${domain}] 腾讯云CLB证书(sni)设置成功`);
+        break;
+      } else if (statusRes.Status === 2) {
+        this.logger.info(`[${domain}] 腾讯云CLB证书(sni)设置进行中，请耐心等待`);
+      } else if (statusRes.Status === 1) {
+        throw new Error(`[${domain}] 腾讯云CLB证书(sni)设置失败:` + statusRes.Message);
+      }
+      await this.ctx.utils.sleep(5000);
+    }
     return ret;
   }
   appendTimeSuffix(name: string) {

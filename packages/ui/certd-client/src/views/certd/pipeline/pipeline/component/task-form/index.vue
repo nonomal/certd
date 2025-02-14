@@ -56,7 +56,7 @@
                       <a key="edit" @click="stepEdit(currentTask, element, index)">编辑</a>
                       <a key="edit" @click="stepCopy(currentTask, element, index)">复制</a>
                       <a key="remove" @click="stepDelete(currentTask, index)">删除</a>
-                      <a key="disabled" @click="element.disabled = !!!element.disabled">{{ element.disabled ? "启用" : "禁用" }}</a>
+                      <a key="disabled" @click="toggleDisabled(currentTask, element)">{{ element.disabled ? "启用" : "禁用" }}</a>
                       <fs-icon v-plus class="icon-button handle cursor-move" title="拖动排序" icon="ion:move-outline"></fs-icon>
                     </div>
                   </div>
@@ -80,7 +80,7 @@
 
 <script lang="ts">
 import { provide, Ref, ref } from "vue";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 import { nanoid } from "nanoid";
 import PiStepForm from "../step-form/index.vue";
 import { Modal } from "ant-design-vue";
@@ -88,6 +88,7 @@ import { CopyOutlined } from "@ant-design/icons-vue";
 import VDraggable from "vuedraggable";
 import { useUserStore } from "/@/store/modules/user";
 import { useSettingStore } from "/@/store/modules/settings";
+import { filter } from "lodash-es";
 export default {
   name: "PiTaskForm",
   components: { CopyOutlined, PiStepForm, VDraggable },
@@ -152,7 +153,11 @@ export default {
         });
       };
 
-      return { stepAdd, stepEdit, stepCopy, stepDelete, stepFormRef };
+      const toggleDisabled = (task: any, step: any) => {
+        step.disabled = !!!step.disabled;
+      };
+
+      return { stepAdd, stepEdit, stepCopy, stepDelete, toggleDisabled, stepFormRef };
     }
 
     /**
@@ -162,7 +167,7 @@ export default {
     function useTaskForm() {
       const mode = ref("add");
       const callback = ref();
-      const currentTask = ref({ title: undefined, steps: [] });
+      const currentTask = ref({ title: undefined, steps: [], disabled: false });
       provide("currentTask", currentTask);
       const taskFormRef: Ref<any> = ref(null);
       const taskDrawerVisible = ref(false);
@@ -218,6 +223,15 @@ export default {
         } catch (e) {
           console.error("表单验证失败:", e);
           return;
+        }
+        const task: any = currentTask.value;
+        const allDisabled = filter(task.steps, (item: any) => {
+          return item.disabled;
+        });
+        if (task.steps.length > 0 && task.steps.length === allDisabled.length) {
+          task.disabled = true;
+        } else {
+          task.disabled = false;
         }
 
         callback.value("save", currentTask.value);

@@ -19,7 +19,7 @@
         <a-form-item label="公共ZeroSSL EAB授权" :name="['CertApply', 'sysSetting', 'input', 'zerosslCommonEabAccessId']">
           <access-selector v-model:model-value="formState.CertApply.sysSetting.input.zerosslCommonEabAccessId" type="eab" from="sys"></access-selector>
           <div class="helper">
-            <div>设置公共ZeroSSL EAB授权给用户使用，避免用户自己去翻墙获取Zero EAB授权，注意：ZeroSSL免费证书有数量限制</div>
+            <div>设置公共ZeroSSL EAB授权给用户使用，避免用户自己去翻墙获取Zero EAB授权</div>
             <div>
               <a href="https://app.zerossl.com/developer">zerossl开发者中心获取EAB </a>
             </div>

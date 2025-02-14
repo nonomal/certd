@@ -41,7 +41,9 @@ docker compose up -d
 
 > 如果提示 没有docker compose命令,请安装docker-compose   
 > https://docs.docker.com/compose/install/linux/   
-> 然后使用 `docker-compose up -d` 启动
+
+> certd默认使用sqlite数据库，另外还支持`mysql`和`postgresql`数据库，[点我了解如何切换其他数据库]((../database))
+
 
 ### 3. 访问测试
 
@@ -71,4 +73,4 @@ docker compose up -d
 
 ## 四、备份恢复
 
-将备份的`db.sqlite`覆盖到原来的位置即可
+将备份的`db.sqlite`及同目录下的其他文件一起覆盖到原来的位置，重启certd即可

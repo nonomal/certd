@@ -1,16 +1,14 @@
 import { defineStore } from "pinia";
 import { Modal, notification, theme } from "ant-design-vue";
-import _, { cloneDeep } from "lodash-es";
+import * as _ from "lodash-es";
 // @ts-ignore
 import { LocalStorage } from "/src/utils/util.storage";
 
 import * as basicApi from "/@/api/modules/api.basic";
-import { HeaderMenus, PlusInfo, SiteEnv, SiteInfo, SysInstallInfo, SysPublicSetting } from "/@/api/modules/api.basic";
+import { HeaderMenus, PlusInfo, SiteEnv, SiteInfo, SuiteSetting, SysInstallInfo, SysPublicSetting } from "/@/api/modules/api.basic";
 import { useUserStore } from "/@/store/modules/user";
 import { mitter } from "/@/utils/util.mitt";
 import { env } from "/@/utils/util.env";
-import { toRef } from "vue";
-import { util } from "/@/utils";
 
 export type ThemeToken = {
   token: {
@@ -39,6 +37,7 @@ export interface SettingState {
   siteEnv?: SiteEnv;
   headerMenus?: HeaderMenus;
   inited?: boolean;
+  suiteSetting?: SuiteSetting;
 }
 
 const defaultThemeConfig = {
@@ -90,6 +89,7 @@ export const useSettingStore = defineStore({
     headerMenus: {
       menus: []
     },
+    suiteSetting: { enabled: false },
     inited: false
   }),
   getters: {
@@ -122,8 +122,13 @@ export const useSettingStore = defineStore({
       };
       return vipLabelMap[this.plusInfo?.vipType || "free"];
     },
-    getHeaderMenus() {
-      return this.headerMenus?.menus || [];
+    getHeaderMenus(): { menus: any[] } {
+      // @ts-ignore
+      return this.headerMenus?.menus || { menus: [] };
+    },
+    isSuiteEnabled(): boolean {
+      // @ts-ignore
+      return this.suiteSetting?.enabled === true;
     }
   },
   actions: {
@@ -142,6 +147,7 @@ export const useSettingStore = defineStore({
       _.merge(this.siteEnv, allSettings.siteEnv || {});
       _.merge(this.plusInfo, allSettings.plusInfo || {});
       _.merge(this.headerMenus, allSettings.headerMenus || {});
+      _.merge(this.suiteSetting, allSettings.suiteSetting || {});
       //@ts-ignore
       this.initSiteInfo(allSettings.siteInfo || {});
     },
@@ -160,7 +166,7 @@ export const useSettingStore = defineStore({
     async checkUrlBound() {
       const userStore = useUserStore();
       const settingStore = useSettingStore();
-      if (!userStore.isAdmin || !settingStore.isPlus) {
+      if (!userStore.isAdmin) {
         return;
       }
 

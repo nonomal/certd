@@ -17,7 +17,6 @@ process.env.VITE_APP_BUILD_TIME = require("dayjs")().format("YYYY-M-D HH:mm:ss")
 
 import { theme } from "ant-design-vue";
 import * as https from "node:https";
-
 const { defaultAlgorithm, defaultSeed } = theme;
 
 const mapToken = defaultAlgorithm(defaultSeed);

@@ -1,4 +1,4 @@
-import { isDev, logger } from "../utils/index.js";
+import { isDev, logger } from "@certd/basic";
 
 export type Registrable = {
   name: string;
@@ -19,7 +19,7 @@ export type OnRegisterContext<T> = {
   value: RegistryItem<T>;
 };
 export type OnRegister<T> = (ctx: OnRegisterContext<T>) => void;
-export class Registry<T> {
+export class Registry<T = any> {
   type = "";
   storage: {
     [key: string]: RegistryItem<T>;
@@ -87,4 +87,22 @@ export class Registry<T> {
     }
     return item.define;
   }
+}
+
+export function createRegistry<T>(type: string, onRegister?: OnRegister<T>): Registry<T> {
+  const pipelineregistrycacheKey = "PIPELINE_REGISTRY_CACHE";
+  // @ts-ignore
+  let cached: any = global[pipelineregistrycacheKey];
+  if (!cached) {
+    cached = {};
+    // @ts-ignore
+    global[pipelineregistrycacheKey] = cached;
+  }
+
+  if (cached[type]) {
+    return cached[type];
+  }
+  const newRegistry = new Registry<T>(type, onRegister);
+  cached[type] = newRegistry;
+  return newRegistry;
 }

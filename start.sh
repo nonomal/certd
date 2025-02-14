@@ -1,6 +1,6 @@
 #
 set -e
-echo "即将删除packages下除ui之外的其他目录，按y确认"
+echo "即将删除packages下除ui之外的其他目录，按y确认（如果您没有修改过源码，按y即可）"
 read -p "y/n: " confirm
 if [ $confirm != "y" ]; then
   echo "取消操作"

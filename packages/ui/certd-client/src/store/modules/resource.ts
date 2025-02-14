@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 // @ts-ignore
 import { frameworkMenus, headerMenus, filterMenus, findMenus } from "/src/router/resolve";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 import { mitter } from "/src/utils/util.mitt";
 //监听注销事件
 mitter.on("app.logout", () => {
@@ -28,6 +28,7 @@ interface ResourceState {
 
 export const useResourceStore = defineStore({
   id: "app.resource",
+  //@ts-ignore
   state: (): ResourceState => ({
     // user info
     topMenus: [],

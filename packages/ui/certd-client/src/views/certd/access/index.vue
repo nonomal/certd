@@ -11,7 +11,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted } from "vue";
+import { defineComponent, onActivated, onMounted } from "vue";
 import { useFs } from "@fast-crud/fast-crud";
 import createCrudOptions from "./crud";
 import { createAccessApi } from "/@/views/certd/access/api";
@@ -24,6 +24,9 @@ export default defineComponent({
 
     // 页面打开后获取列表数据
     onMounted(() => {
+      crudExpose.doRefresh();
+    });
+    onActivated(() => {
       crudExpose.doRefresh();
     });
 

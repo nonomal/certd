@@ -21,7 +21,7 @@ export type CustomScriptContext = {
 export class CustomScriptPlugin extends AbstractTaskPlugin {
   @TaskInput({
     title: '脚本',
-    helper: '自定义js脚本',
+    helper: '自定义js脚本，[脚本编写帮助文档](https://certd.docmirror.cn/guide/use/custom-script/)',
     component: {
       name: 'a-textarea',
       vModel: 'value',

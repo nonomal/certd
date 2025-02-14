@@ -1,7 +1,8 @@
 import { AbstractDnsProvider, CreateRecordOptions, IsDnsProvider, RemoveRecordOptions } from '@certd/plugin-cert';
-import { Autowire, HttpClient, ILogger } from '@certd/pipeline';
+import { Autowire } from '@certd/pipeline';
+
 import { DemoAccess } from './access.js';
-import { isDev } from "../../utils/env.js";
+import { isDev } from '../../utils/env.js';
 
 type DemoRecord = {
   // 这里定义Record记录的数据结构，跟对应云平台接口返回值一样即可，一般是拿到id就行，用于删除txt解析记录，清理申请痕迹
@@ -13,6 +14,7 @@ type DemoRecord = {
   name: 'demo',
   title: 'Dns提供商Demo',
   desc: 'dns provider示例',
+  icon: 'clarity:plugin-line',
   // 这里是对应的云平台的access类型名称
   accessType: 'demo',
 })
@@ -20,13 +22,9 @@ export class DemoDnsProvider extends AbstractDnsProvider<DemoRecord> {
   // 通过Autowire注入工具对象
   @Autowire()
   access!: DemoAccess;
-  @Autowire()
-  logger!: ILogger;
-  http!: HttpClient;
 
   async onInstance() {
     // 也可以通过ctx成员变量传递context， 与Autowire效果一样
-    this.http = this.ctx.http;
     this.logger.debug('access', this.access);
     //初始化的操作
     //...

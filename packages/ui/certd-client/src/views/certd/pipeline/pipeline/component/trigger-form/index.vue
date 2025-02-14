@@ -58,7 +58,7 @@
                 name: 'cron-editor',
                 vModel: 'modelValue'
               },
-              helper: '点击上面的按钮，选择每天几点几分定时执行，后面的分秒都要选择0。\n建议设置为每天触发一次，证书未到期之前任务会跳过，不会重复执行',
+              helper: '点击上面的按钮，选择每天几点定时执行。\n建议设置为每天触发一次，证书未到期之前任务会跳过，不会重复执行',
               rules: [{ required: true, message: '此项必填' }]
             }"
           />
@@ -77,7 +77,7 @@
 <script>
 import { message, Modal } from "ant-design-vue";
 import { inject, ref } from "vue";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 import { nanoid } from "nanoid";
 export default {
   name: "PiTriggerForm",

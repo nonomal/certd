@@ -1,11 +1,20 @@
 import { Config, Inject, Provide, Scope, ScopeEnum, sleep } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { In, MoreThan, Repository } from 'typeorm';
-import { BaseService, NeedVIPException, PageReq, SysPublicSettings, SysSettingsService } from '@certd/lib-server';
+import {
+  AccessGetter,
+  AccessService,
+  BaseService,
+  NeedSuiteException,
+  NeedVIPException,
+  PageReq,
+  SysPublicSettings,
+  SysSettingsService,
+  SysSiteInfo,
+} from '@certd/lib-server';
 import { PipelineEntity } from '../entity/pipeline.js';
 import { PipelineDetail } from '../entity/vo/pipeline-detail.js';
-import { Executor, isPlus, logger, Pipeline, ResultType, RunHistory, UserInfo } from '@certd/pipeline';
-import { AccessService } from './access-service.js';
+import { Executor, Pipeline, ResultType, RunHistory, RunnableCollection, SysInfo, UserInfo } from '@certd/pipeline';
 import { DbStorage } from './db-storage.js';
 import { StorageService } from './storage-service.js';
 import { Cron } from '../../cron/cron.js';
@@ -15,21 +24,26 @@ import { HistoryLogEntity } from '../entity/history-log.js';
 import { HistoryLogService } from './history-log-service.js';
 import { EmailService } from '../../basic/service/email-service.js';
 import { UserService } from '../../sys/authority/service/user-service.js';
-import { AccessGetter } from './access-getter.js';
 import { CnameRecordService } from '../../cname/service/cname-record-service.js';
 import { CnameProxyService } from './cname-proxy-service.js';
 import { PluginConfigGetter } from '../../plugin/service/plugin-config-getter.js';
 import dayjs from 'dayjs';
 import { DbAdapter } from '../../db/index.js';
+import { isComm } from '@certd/plus-core';
+import { logger } from '@certd/basic';
+import { UrlService } from './url-service.js';
+import { NotificationService } from './notification-service.js';
+import { NotificationGetter } from './notification-getter.js';
+import { UserSuiteEntity, UserSuiteService } from '@certd/commercial-core';
+import { CertInfoService } from '../../monitor/service/cert-info-service.js';
 
 const runningTasks: Map<string | number, Executor> = new Map();
-const freeCount = 10;
 
 /**
  * 证书申请
  */
 @Provide()
-@Scope(ScopeEnum.Singleton)
+@Scope(ScopeEnum.Request, { allowDowngrade: true })
 export class PipelineService extends BaseService<PipelineEntity> {
   @InjectEntityModel(PipelineEntity)
   repository: Repository<PipelineEntity>;
@@ -56,13 +70,25 @@ export class PipelineService extends BaseService<PipelineEntity> {
   userService: UserService;
 
   @Inject()
+  userSuiteService: UserSuiteService;
+
+  @Inject()
   cron: Cron;
 
   @Config('certd')
   private certdConfig: any;
 
   @Inject()
+  urlService: UrlService;
+
+  @Inject()
+  notificationService: NotificationService;
+
+  @Inject()
   dbAdapter: DbAdapter;
+
+  @Inject()
+  certInfoService: CertInfoService;
 
   //@ts-ignore
   getRepository() {
@@ -122,7 +148,7 @@ export class PipelineService extends BaseService<PipelineEntity> {
     return new PipelineDetail(pipeline);
   }
 
-  async update(bean: PipelineEntity) {
+  async update(bean: Partial<PipelineEntity>) {
     //更新非trigger部分
     await super.update(bean);
   }
@@ -133,26 +159,22 @@ export class PipelineService extends BaseService<PipelineEntity> {
       //修改
       old = await this.info(bean.id);
     }
+    const pipeline = JSON.parse(bean.content || '{}');
+    RunnableCollection.initPipelineRunnableType(pipeline);
     const isUpdate = bean.id > 0 && old != null;
+
+    let domains = [];
+    if (pipeline.stages) {
+      RunnableCollection.each(pipeline.stages, (runnable: any) => {
+        if (runnable.runnableType === 'step' && runnable.type.startsWith('CertApply')) {
+          domains = runnable.input.domains || [];
+        }
+      });
+    }
+
     if (!isUpdate) {
       //如果是添加，校验数量
-      if (!isPlus()) {
-        const count = await this.repository.count();
-        if (count >= freeCount) {
-          throw new NeedVIPException(`基础版最多只能创建${freeCount}条流水线`);
-        }
-      }
-      const userId = bean.userId;
-      const userIsAdmin = await this.userService.isAdmin(userId);
-      if (!userIsAdmin) {
-        //非管理员用户，限制pipeline数量
-        const count = await this.repository.count({ where: { userId } });
-        const sysPublic = await this.sysSettingsService.getSetting<SysPublicSettings>(SysPublicSettings);
-        const limitUserPipelineCount = sysPublic.limitUserPipelineCount;
-        if (limitUserPipelineCount && limitUserPipelineCount > 0 && count >= limitUserPipelineCount) {
-          throw new NeedVIPException(`您最多只能创建${limitUserPipelineCount}条流水线`);
-        }
-      }
+      await this.checkMaxPipelineCount(bean, pipeline, domains);
     }
 
     if (!isUpdate) {
@@ -160,17 +182,52 @@ export class PipelineService extends BaseService<PipelineEntity> {
       await this.addOrUpdate(bean);
     }
     await this.clearTriggers(bean.id);
-    if (bean.content) {
-      const pipeline = JSON.parse(bean.content);
-      if (pipeline.title) {
-        bean.title = pipeline.title;
-      }
-      pipeline.id = bean.id;
-      bean.content = JSON.stringify(pipeline);
+    if (pipeline.title) {
+      bean.title = pipeline.title;
     }
+    pipeline.id = bean.id;
+    bean.content = JSON.stringify(pipeline);
     await this.addOrUpdate(bean);
     await this.registerTriggerById(bean.id);
+
+    //保存域名信息到certInfo表
+    await this.certInfoService.updateDomains(pipeline.id, pipeline.userId || bean.userId, domains);
     return bean;
+  }
+
+  private async checkMaxPipelineCount(bean: PipelineEntity, pipeline: Pipeline, domains: string[]) {
+    // if (!isPlus()) {
+    //   const count = await this.repository.count();
+    //   if (count >= freeCount) {
+    //     throw new NeedVIPException(`基础版最多只能创建${freeCount}条流水线`);
+    //   }
+    // }
+    if (isComm()) {
+      //校验pipelineCount
+      const suiteSetting = await this.userSuiteService.getSuiteSetting();
+      if (suiteSetting.enabled) {
+        const userSuite = await this.userSuiteService.getMySuiteDetail(bean.userId);
+        if (userSuite?.pipelineCount.max != -1 && userSuite?.pipelineCount.used + 1 > userSuite?.pipelineCount.max) {
+          throw new NeedSuiteException(`对不起，您最多只能创建${userSuite?.pipelineCount.max}条流水线，请购买或升级套餐`);
+        }
+
+        if (userSuite.domainCount.max != -1 && userSuite.domainCount.used + domains.length > userSuite.domainCount.max) {
+          throw new NeedSuiteException(`对不起，您最多只能添加${userSuite.domainCount.max}个域名，请购买或升级套餐`);
+        }
+      }
+    }
+
+    const userId = bean.userId;
+    const userIsAdmin = await this.userService.isAdmin(userId);
+    if (!userIsAdmin) {
+      //非管理员用户，限制pipeline数量
+      const count = await this.repository.count({ where: { userId } });
+      const sysPublic = await this.sysSettingsService.getSetting<SysPublicSettings>(SysPublicSettings);
+      const limitUserPipelineCount = sysPublic.limitUserPipelineCount;
+      if (limitUserPipelineCount && limitUserPipelineCount > 0 && count >= limitUserPipelineCount) {
+        throw new NeedVIPException(`普通用户最多只能创建${limitUserPipelineCount}条流水线`);
+      }
+    }
   }
 
   async foreachPipeline(callback: (pipeline: PipelineEntity) => void) {
@@ -250,18 +307,37 @@ export class PipelineService extends BaseService<PipelineEntity> {
   }
 
   async trigger(id: any, stepId?: string) {
+    const entity: PipelineEntity = await this.info(id);
+    if (isComm()) {
+      await this.checkHasDeployCount(id, entity.userId);
+    }
     this.cron.register({
       name: `pipeline.${id}.trigger.once`,
       cron: null,
       job: async () => {
         logger.info('用户手动启动job');
         try {
-          await this.run(id, null, stepId);
+          await this.doRun(entity, null, stepId);
         } catch (e) {
           logger.error('手动job执行失败：', e);
         }
       },
     });
+  }
+
+  async checkHasDeployCount(pipelineId: number, userId: number) {
+    try {
+      return await this.userSuiteService.checkHasDeployCount(userId);
+    } catch (e) {
+      if (e instanceof NeedSuiteException) {
+        logger.error(e.message);
+        await this.update({
+          id: pipelineId,
+          status: 'no_deploy_count',
+        });
+      }
+      throw e;
+    }
   }
 
   async delete(id: any) {
@@ -272,6 +348,7 @@ export class PipelineService extends BaseService<PipelineEntity> {
     await super.delete([id]);
     await this.historyService.deleteByPipelineId(id);
     await this.historyLogService.deleteByPipelineId(id);
+    await this.certInfoService.deleteByPipelineId(id);
   }
 
   async clearTriggers(id: number) {
@@ -306,8 +383,11 @@ export class PipelineService extends BaseService<PipelineEntity> {
       return;
     }
     cron = cron.trim();
+    if (cron.startsWith('* *')) {
+      cron = cron.replace('* *', '0 0');
+    }
     if (cron.startsWith('*')) {
-      cron = '0' + cron.substring(1, cron.length);
+      cron = cron.replace('*', '0');
     }
     const triggerId = trigger.id;
     const name = this.buildCronKey(pipelineId, triggerId);
@@ -333,6 +413,15 @@ export class PipelineService extends BaseService<PipelineEntity> {
 
   async run(id: number, triggerId: string, stepId?: string) {
     const entity: PipelineEntity = await this.info(id);
+    await this.doRun(entity, triggerId, stepId);
+  }
+
+  async doRun(entity: PipelineEntity, triggerId: string, stepId?: string) {
+    const id = entity.id;
+    let suite: UserSuiteEntity = null;
+    if (isComm()) {
+      suite = await this.checkHasDeployCount(id, entity.userId);
+    }
 
     const pipeline = JSON.parse(entity.content);
     if (!pipeline.id) {
@@ -377,8 +466,15 @@ export class PipelineService extends BaseService<PipelineEntity> {
       id: userId,
       role: userIsAdmin ? 'admin' : 'user',
     };
+
     const accessGetter = new AccessGetter(userId, this.accessService.getById.bind(this.accessService));
     const cnameProxyService = new CnameProxyService(userId, this.cnameRecordService.getWithAccessByDomain.bind(this.cnameRecordService));
+    const notificationGetter = new NotificationGetter(userId, this.notificationService);
+    const sysInfo: SysInfo = {};
+    if (isComm()) {
+      const siteInfo = await this.sysSettingsService.getSetting<SysSiteInfo>(SysSiteInfo);
+      sysInfo.title = siteInfo.title;
+    }
     const executor = new Executor({
       user,
       pipeline,
@@ -388,7 +484,10 @@ export class PipelineService extends BaseService<PipelineEntity> {
       pluginConfigService: this.pluginConfigGetter,
       storage: new DbStorage(userId, this.storageService),
       emailService: this.emailService,
+      urlService: this.urlService,
+      notificationService: notificationGetter,
       fileRootDir: this.certdConfig.fileRootDir,
+      sysInfo,
     });
     try {
       runningTasks.set(historyId, executor);
@@ -397,7 +496,14 @@ export class PipelineService extends BaseService<PipelineEntity> {
         // 清除该step的状态
         executor.clearLastStatus(stepId);
       }
-      await executor.run(historyId, triggerType);
+      const result = await executor.run(historyId, triggerType);
+
+      if (result === ResultType.success) {
+        if (isComm()) {
+          // 消耗成功次数
+          await this.userSuiteService.consumeDeployCount(suite, 1);
+        }
+      }
     } catch (e) {
       logger.error('执行失败：', e);
       // throw e;
@@ -536,5 +642,39 @@ export class PipelineService extends BaseService<PipelineEntity> {
       .getRawMany();
 
     return result;
+  }
+
+  async batchDelete(ids: number[], userId: number) {
+    for (const id of ids) {
+      await this.checkUserId(id, userId);
+      await this.delete(id);
+    }
+  }
+
+  async batchUpdateGroup(ids: number[], groupId: number, userId: any) {
+    await this.repository.update(
+      {
+        id: In(ids),
+        userId,
+      },
+      { groupId }
+    );
+  }
+
+  async getUserPipelineCount(userId) {
+    return await this.repository.count({ where: { userId } });
+  }
+
+  async getSimplePipelines(pipelineIds: number[], userId?: number) {
+    return await this.repository.find({
+      select: {
+        id: true,
+        title: true,
+      },
+      where: {
+        id: In(pipelineIds),
+        userId,
+      },
+    });
   }
 }

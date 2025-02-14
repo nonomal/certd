@@ -1,15 +1,16 @@
 import { compute, CreateCrudOptionsRet, dict } from "@fast-crud/fast-crud";
-import { PluginGroup } from "@certd/pipeline";
 import { useReference } from "/@/use/use-refrence";
 import _, { merge } from "lodash-es";
 import { useUserStore } from "/@/store/modules/user";
 import { useSettingStore } from "/@/store/modules/settings";
 import * as api from "../api.plugin";
-export default function (certPluginGroup: PluginGroup, formWrapperRef: any): CreateCrudOptionsRet {
+import NotificationSelector from "/@/views/certd/notification/notification-selector/index.vue";
+
+export default function (certPlugins: any[], formWrapperRef: any): CreateCrudOptionsRet {
   const inputs: any = {};
   const userStore = useUserStore();
   const settingStore = useSettingStore();
-  for (const plugin of certPluginGroup.plugins) {
+  for (const plugin of certPlugins) {
     for (const inputKey in plugin.input) {
       if (inputs[inputKey]) {
         inputs[inputKey].form.show = true;
@@ -42,6 +43,8 @@ export default function (certPluginGroup: PluginGroup, formWrapperRef: any): Cre
     }
   }
 
+  const randomHour = Math.floor(Math.random() * 6);
+  const randomMin = Math.floor(Math.random() * 60);
   return {
     crudOptions: {
       form: {
@@ -93,39 +96,32 @@ export default function (certPluginGroup: PluginGroup, formWrapperRef: any): Cre
           title: "定时触发",
           type: "text",
           form: {
+            value: `0 ${randomMin} ${randomHour} * * *`,
             component: {
               name: "cron-editor",
               vModel: "modelValue",
               placeholder: "0 0 4 * * *"
             },
-            helper: "点击上面的按钮，选择每天几点几分定时执行,后面的分秒都要选择0。\n建议设置为每天触发一次，证书未到期之前任务会跳过，不会重复执行",
+            helper: "点击上面的按钮，选择每天几点定时执行。\n建议设置为每天触发一次，证书未到期之前任务会跳过，不会重复执行",
             order: 100
           }
         },
-        emailNotify: {
-          title: "失败邮件通知",
-          type: "dict-switch",
-          dict: dict({
-            data: [
-              { value: true, label: "启用" },
-              { value: false, label: "不启用" }
-            ]
-          }),
+        notification: {
+          title: "失败通知",
+          type: "text",
           form: {
-            order: 101,
-            value: true,
-            helper: {
-              render: () => {
-                if (settingStore.isPlus) {
-                  return "建议启用";
+            value: 0,
+            component: {
+              name: NotificationSelector,
+              vModel: "modelValue",
+              on: {
+                selectedChange({ $event, form }) {
+                  form.notificationTarget = $event;
                 }
-                return (
-                  <div>
-                    建议启用，需要配置<router-link to={{ path: "/sys/settings/email" }}>邮件服务器</router-link>才能发送邮件
-                  </div>
-                );
               }
-            }
+            },
+            order: 101,
+            helper: "任务执行失败实时提醒"
           }
         }
       }

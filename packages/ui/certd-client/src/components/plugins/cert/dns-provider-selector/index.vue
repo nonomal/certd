@@ -1,5 +1,5 @@
 <template>
-  <a-select class="dns-provider-selector" :value="modelValue" :options="options" @update:value="onChanged"> </a-select>
+  <icon-select class="dns-provider-selector" :value="modelValue" :options="options" @update:value="onChanged"> </icon-select>
 </template>
 
 <script lang="ts">
@@ -24,7 +24,8 @@ export default {
       for (let item of list) {
         array.push({
           value: item.name,
-          label: item.title
+          label: item.title,
+          icon: item.icon
         });
       }
       options.value = array;

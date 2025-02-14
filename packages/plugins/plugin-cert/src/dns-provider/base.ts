@@ -2,12 +2,17 @@ import { CreateRecordOptions, DnsProviderContext, DnsProviderDefine, IDnsProvide
 import psl from "psl";
 import { dnsProviderRegistry } from "./registry.js";
 import { Decorator } from "@certd/pipeline";
+import { HttpClient, ILogger } from "@certd/basic";
 
 export abstract class AbstractDnsProvider<T = any> implements IDnsProvider<T> {
   ctx!: DnsProviderContext;
+  http!: HttpClient;
+  logger!: ILogger;
 
   setCtx(ctx: DnsProviderContext) {
     this.ctx = ctx;
+    this.logger = ctx.logger;
+    this.http = ctx.http;
   }
 
   abstract createRecord(options: CreateRecordOptions): Promise<T>;

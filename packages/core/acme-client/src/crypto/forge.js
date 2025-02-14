@@ -6,11 +6,10 @@
  *
  * @namespace forge
  */
-
-const net = require('net');
-const { promisify } = require('util');
-const forge = require('node-forge');
-const { createPrivateEcdsaKey, getPublicKey } = require('./index');
+import net from 'net';
+import { promisify } from 'util';
+import forge from 'node-forge';
+import { createPrivateEcdsaKey } from './index.js';
 
 const generateKeyPair = promisify(forge.pki.rsa.generateKeyPair);
 
@@ -113,13 +112,12 @@ function parseDomains(obj) {
  * ```
  */
 
-async function createPrivateKey(size = 2048) {
+export async function createPrivateKey(size = 2048) {
     const keyPair = await generateKeyPair({ bits: size });
     const pemKey = forge.pki.privateKeyToPem(keyPair.privateKey);
     return Buffer.from(pemKey);
 }
 
-exports.createPrivateKey = createPrivateKey;
 
 /**
  * Create public key from a private RSA key
@@ -133,7 +131,7 @@ exports.createPrivateKey = createPrivateKey;
  * ```
  */
 
-exports.createPublicKey = async (key) => {
+export const createPublicKey = async (key) => {
     const privateKey = forge.pki.privateKeyFromPem(key);
     const publicKey = forge.pki.rsa.setPublicKey(privateKey.n, privateKey.e);
     const pemKey = forge.pki.publicKeyToPem(publicKey);
@@ -148,7 +146,7 @@ exports.createPublicKey = async (key) => {
  * @returns {string} PEM body
  */
 
-exports.getPemBody = (str) => {
+export const getPemBody = (str) => {
     const msg = forge.pem.decode(str)[0];
     return forge.util.encode64(msg.body);
 };
@@ -160,7 +158,7 @@ exports.getPemBody = (str) => {
  * @returns {string[]} Array of PEM bodies
  */
 
-exports.splitPemChain = (str) => forge.pem.decode(str).map(forge.pem.encode);
+export const splitPemChain = (str) => forge.pem.decode(str).map(forge.pem.encode);
 
 /**
  * Get modulus
@@ -176,7 +174,7 @@ exports.splitPemChain = (str) => forge.pem.decode(str).map(forge.pem.encode);
  * ```
  */
 
-exports.getModulus = async (input) => {
+export const getModulus = async (input) => {
     if (!Buffer.isBuffer(input)) {
         input = Buffer.from(input);
     }
@@ -199,7 +197,7 @@ exports.getModulus = async (input) => {
  * ```
  */
 
-exports.getPublicExponent = async (input) => {
+export const getPublicExponent = async (input) => {
     if (!Buffer.isBuffer(input)) {
         input = Buffer.from(input);
     }
@@ -223,7 +221,7 @@ exports.getPublicExponent = async (input) => {
  * ```
  */
 
-exports.readCsrDomains = async (csr) => {
+export const readCsrDomains = async (csr) => {
     if (!Buffer.isBuffer(csr)) {
         csr = Buffer.from(csr);
     }
@@ -251,7 +249,7 @@ exports.readCsrDomains = async (csr) => {
  * ```
  */
 
-exports.readCertificateInfo = async (cert) => {
+export const readCertificateInfo = async (cert) => {
     if (!Buffer.isBuffer(cert)) {
         cert = Buffer.from(cert);
     }
@@ -379,7 +377,7 @@ function formatCsrAltNames(altNames) {
  * }, certificateKey);
  */
 
-exports.createCsr = async (data, keyType = null) => {
+export const createCsr = async (data, keyType = null) => {
     let key = null;
     if (keyType === 'ec') {
         key = await createPrivateEcdsaKey();

@@ -5,6 +5,7 @@ import { IsAccess, AccessInput, BaseAccess } from '@certd/pipeline';
   title: 'dnspod(已废弃)',
   desc: '腾讯云的域名解析接口已迁移到dnspod',
   deprecated: 'dnspod已废弃，请换成腾讯云',
+  icon: 'svg:icon-tencentcloud',
 })
 export class DnspodAccess extends BaseAccess {
   @AccessInput({

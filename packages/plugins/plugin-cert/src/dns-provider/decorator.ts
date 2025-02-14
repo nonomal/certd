@@ -1,7 +1,7 @@
 import { dnsProviderRegistry } from "./registry.js";
 import { DnsProviderDefine } from "./api.js";
 import { Decorator, AUTOWIRE_KEY } from "@certd/pipeline";
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 
 // 提供一个唯一 key
 export const DNS_PROVIDER_CLASS_KEY = "pipeline:dns-provider";

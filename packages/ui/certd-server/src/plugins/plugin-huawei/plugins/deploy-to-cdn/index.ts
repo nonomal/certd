@@ -1,11 +1,12 @@
-import { AbstractTaskPlugin, IsTaskPlugin, pluginGroups, resetLogConfigure, RunStrategy, TaskInput } from '@certd/pipeline';
+import { AbstractTaskPlugin, IsTaskPlugin, pluginGroups, RunStrategy, TaskInput } from '@certd/pipeline';
 import { HuaweiAccess } from '../../access/index.js';
 import { CertInfo } from '@certd/plugin-cert';
-import { createCertDomainGetterInputDefine, createRemoteSelectInputDefine } from '@certd/plugin-plus';
+import { createCertDomainGetterInputDefine, createRemoteSelectInputDefine } from '@certd/plugin-lib';
+import { resetLogConfigure } from '@certd/basic';
 
 @IsTaskPlugin({
   name: 'HauweiDeployCertToCDN',
-  title: '部署证书至华为云CDN',
+  title: '华为云-部署证书至CDN',
   icon: 'svg:icon-huawei',
   group: pluginGroups.huawei.key,
   desc: '',

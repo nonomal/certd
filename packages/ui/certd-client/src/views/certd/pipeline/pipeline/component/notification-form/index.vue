@@ -19,6 +19,7 @@
       <pi-container>
         <a-form ref="notificationFormRef" class="notification-form" :model="currentNotification" :label-col="labelCol" :wrapper-col="wrapperCol">
           <fs-form-item
+            v-if="currentNotification.type === 'email'"
             v-model="currentNotification.type"
             :item="{
               title: '类型',
@@ -28,7 +29,10 @@
                 name: 'a-select',
                 vModel: 'value',
                 disabled: !editMode,
-                options: [{ value: 'email', label: '邮件' }]
+                options: [
+                  { value: 'email', label: '邮件' },
+                  { value: 'other', label: '其他通知方式' }
+                ]
               },
               rules: [{ required: true, message: '此项必填' }]
             }"
@@ -47,15 +51,35 @@
                 options: [
                   { value: 'start', label: '开始时' },
                   { value: 'success', label: '成功时' },
-                  { value: 'turnToSuccess', label: '错误转成功时' },
-                  { value: 'error', label: '错误时' }
+                  { value: 'turnToSuccess', label: '失败转成功时' },
+                  { value: 'error', label: '失败时' }
                 ]
               },
-              helper: `建议仅选择'错误时'和'错误转成功'两种即可`,
+              helper: `建议仅选择'失败时'和'失败转成功'两种即可`,
               rules: [{ required: true, message: '此项必填' }]
             }"
           />
-          <pi-notification-form-email ref="optionsRef" v-model:options="currentNotification.options"></pi-notification-form-email>
+          <pi-notification-form-email
+            v-if="currentNotification.type === 'email'"
+            ref="optionsRef"
+            v-model:options="currentNotification.options"
+          ></pi-notification-form-email>
+
+          <fs-form-item
+            v-else
+            v-model="currentNotification.notificationId"
+            :item="{
+              title: '通知配置',
+              key: 'type',
+              component: {
+                disabled: !editMode,
+                name: NotificationSelector,
+                onSelectedChange
+              },
+              helper: '请选择通知方式',
+              rules: [{ required: true, message: '此项必填' }]
+            }"
+          />
         </a-form>
 
         <template #footer>
@@ -70,14 +94,16 @@
 
 <script lang="ts">
 import { Modal } from "ant-design-vue";
-import { ref } from "vue";
-import _ from "lodash-es";
+import { ref, Ref } from "vue";
+import * as _ from "lodash-es";
 import { nanoid } from "nanoid";
 import PiNotificationFormEmail from "./pi-notification-form-email.vue";
+import NotificationSelector from "/@/views/certd/notification/notification-selector/index.vue";
 
 export default {
   name: "PiNotificationForm",
-  components: { PiNotificationFormEmail },
+  // eslint-disable-next-line vue/no-unused-components
+  components: { NotificationSelector, PiNotificationFormEmail },
   props: {
     editMode: {
       type: Boolean,
@@ -93,7 +119,7 @@ export default {
     function useNotificationForm() {
       const mode = ref("add");
       const callback = ref();
-      const currentNotification = ref({ type: undefined, when: [], options: {} });
+      const currentNotification: Ref<any> = ref({ type: undefined, when: [], options: {}, notificationId: undefined, title: "" });
       const currentPlugin = ref({});
       const notificationFormRef = ref(null);
       const notificationDrawerVisible = ref(false);
@@ -111,6 +137,13 @@ export default {
             type: "string",
             required: true,
             message: "请选择通知时机"
+          }
+        ],
+        notificationId: [
+          {
+            type: "number",
+            required: true,
+            message: "请选择通知配置"
           }
         ]
       });
@@ -135,7 +168,7 @@ export default {
 
       const notificationAdd = (emit: any) => {
         mode.value = "add";
-        const notification = { id: nanoid(), type: "email", when: ["error"] };
+        const notification = { id: nanoid(), type: "custom", when: ["error", "turnToSuccess"] };
         notificationOpen(notification, emit);
       };
 
@@ -150,7 +183,10 @@ export default {
       };
 
       const notificationSave = async (e: any) => {
-        currentNotification.value.options = await optionsRef.value.getValue();
+        if (optionsRef.value) {
+          currentNotification.value.options = await optionsRef.value.getValue();
+        }
+
         console.log("currentNotificationSave", currentNotification.value);
         try {
           await notificationFormRef.value.validate();
@@ -177,8 +213,13 @@ export default {
       const blankFn = () => {
         return {};
       };
+
+      function onSelectedChange(node: any) {
+        currentNotification.value.title = node?.name || null;
+      }
       return {
         notificationFormRef,
+        onSelectedChange,
         mode,
         notificationAdd,
         notificationEdit,
@@ -201,6 +242,11 @@ export default {
       labelCol: { span: 6 },
       wrapperCol: { span: 16 }
     };
+  },
+  computed: {
+    NotificationSelector() {
+      return NotificationSelector;
+    }
   }
 };
 </script>

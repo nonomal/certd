@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-export type CnameRecordStatusType = 'cname' | 'validating' | 'valid' | 'error';
+export type CnameRecordStatusType = 'cname' | 'validating' | 'valid' | 'error' | 'timeout';
 /**
  * cname record配置
  */

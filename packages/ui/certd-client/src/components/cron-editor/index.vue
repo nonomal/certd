@@ -13,8 +13,9 @@
         @error="onError"
       />
     </div>
-    <div class="mt-5">
+    <div class="mt-5 flex">
       <a-input :disabled="true" :readonly="readonly" :value="modelValue" @change="onChange"></a-input>
+      <fs-icon icon="ion:close-circle" class="pointer fs-16 ml-5 color-gray" title="清除选择" @click="onClear"></fs-icon>
     </div>
     <div class="helper">下次触发时间：{{ nextTime }}</div>
     <div class="fs-helper">{{ errorMessage }}</div>
@@ -35,11 +36,16 @@ const props = defineProps<{
 }>();
 
 const period = ref<string>("");
-if (props.modelValue == null) {
+if (props.modelValue == null || props.modelValue.endsWith("* * *")) {
   period.value = "day";
+} else if (props.modelValue.endsWith("* *")) {
+  period.value = "month";
+} else if (props.modelValue.endsWith("*")) {
+  period.value = "year";
 }
 const emit = defineEmits<{
   "update:modelValue": any;
+  change: any;
 }>();
 
 const errorMessage = ref<string | null>(null);
@@ -48,6 +54,15 @@ const onUpdate = (value: string) => {
   if (value === props.modelValue) {
     return;
   }
+  const arr: string[] = value.split(" ");
+  if (arr[0] === "*") {
+    arr[0] = "0";
+  }
+  if (arr[1] === "*") {
+    arr[1] = "0";
+  }
+  value = arr.join(" ");
+
   emit("update:modelValue", value);
   errorMessage.value = undefined;
 };
@@ -62,6 +77,13 @@ const onChange = (e: any) => {
 };
 const onError = (error: any) => {
   errorMessage.value = error;
+};
+
+const onClear = () => {
+  if (props.disabled) {
+    return;
+  }
+  onUpdate("");
 };
 
 const nextTime = computed(() => {

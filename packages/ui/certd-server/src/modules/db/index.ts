@@ -2,9 +2,10 @@ import { SqliteAdapter } from './sqlite.js';
 import { PostgresqlAdapter } from './postgresql.js';
 import { Config, Init, Provide, Scope, ScopeEnum } from '@midwayjs/core';
 import { SqlAdapter } from './d.js';
+import { MysqlAdapter } from './mysql.js';
 
 @Provide()
-@Scope(ScopeEnum.Singleton)
+@Scope(ScopeEnum.Request, { allowDowngrade: true })
 export class DbAdapter implements SqlAdapter {
   adapter: SqlAdapter;
   @Config('typeorm.dataSource.default.type')
@@ -16,8 +17,10 @@ export class DbAdapter implements SqlAdapter {
       this.adapter = new SqliteAdapter();
     } else if (this.isPostgresql()) {
       this.adapter = new PostgresqlAdapter();
+    } else if (this.isMysql()) {
+      this.adapter = new MysqlAdapter();
     } else {
-      throw new Error(`dbType ${this.dbType} not support`);
+      throw new Error(`dbType ${this.dbType} not support， 请实现Adapter`);
     }
   }
 
@@ -26,6 +29,9 @@ export class DbAdapter implements SqlAdapter {
   }
   isPostgresql() {
     return this.dbType === 'postgres';
+  }
+  isMysql() {
+    return this.dbType === 'mysql' || this.dbType === 'mariadb';
   }
 
   date(columnName: string) {

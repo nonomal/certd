@@ -1,15 +1,24 @@
 import { Registrable } from "../registry/index.js";
 import { FileItem, FormItemProps, Pipeline, Runnable, Step } from "../dt/index.js";
 import { FileStore } from "../core/file-store.js";
-import { Logger } from "log4js";
 import { IAccessService } from "../access/index.js";
-import { ICnameProxyService, IEmailService } from "../service/index.js";
-import { CancelError, IContext, PluginRequestHandleReq, RunnableCollection } from "../core/index.js";
-import { ILogger, logger, utils } from "../utils/index.js";
-import { HttpClient } from "../utils/index.js";
+import { ICnameProxyService, IEmailService, IUrlService } from "../service/index.js";
+import { CancelError, IContext, RunHistory, RunnableCollection } from "../core/index.js";
+import { HttpRequestConfig, ILogger, logger, utils } from "@certd/basic";
+import { HttpClient } from "@certd/basic";
 import dayjs from "dayjs";
-import { IPluginConfigService } from "../service/config";
+import { IPluginConfigService } from "../service/config.js";
 import { upperFirst } from "lodash-es";
+import { INotificationService } from "../notification/index.js";
+import { TaskEmitter } from "../service/emit.js";
+
+export type PluginRequestHandleReq<T = any> = {
+  typeName: string;
+  action: string;
+  input: T;
+  data: any;
+};
+
 export type UserInfo = {
   role: "admin" | "user";
   id: any;
@@ -51,7 +60,7 @@ export type PluginDefine = Registrable & {
 
 export type ITaskPlugin = {
   onInstance(): Promise<void>;
-  execute(): Promise<void>;
+  execute(): Promise<void | string>;
   onRequest(req: PluginRequestHandleReq<any>): Promise<any>;
   [key: string]: any;
 };
@@ -65,10 +74,12 @@ export type TaskResult = {
 export type TaskInstanceContext = {
   //流水线定义
   pipeline: Pipeline;
+  //运行时历史
+  runtime: RunHistory;
   //步骤定义
   step: Step;
   //日志
-  logger: Logger;
+  logger: ILogger;
   //当前步骤输入参数跟上一次执行比较是否有变化
   inputChanged: boolean;
   //授权获取服务
@@ -79,12 +90,18 @@ export type TaskInstanceContext = {
   cnameProxyService: ICnameProxyService;
   //插件配置服务
   pluginConfigService: IPluginConfigService;
+  //通知服务
+  notificationService: INotificationService;
+  //url构建
+  urlService: IUrlService;
   //流水线上下文
   pipelineContext: IContext;
   //用户上下文
   userContext: IContext;
   //http请求客户端
   http: HttpClient;
+  //下载文件方法
+  download: (config: HttpRequestConfig, savePath: string) => Promise<void>;
   //文件存储
   fileStore: FileStore;
   //上一次执行结果状态
@@ -95,12 +112,15 @@ export type TaskInstanceContext = {
   utils: typeof utils;
   //用户信息
   user: UserInfo;
+
+  emitter: TaskEmitter;
 };
 
 export abstract class AbstractTaskPlugin implements ITaskPlugin {
   _result: TaskResult = { clearLastStatus: false, files: [], pipelineVars: {}, pipelinePrivateVars: {} };
   ctx!: TaskInstanceContext;
   logger!: ILogger;
+  http!: HttpClient;
   accessService!: IAccessService;
 
   clearLastStatus() {
@@ -121,6 +141,7 @@ export abstract class AbstractTaskPlugin implements ITaskPlugin {
     this.ctx = ctx;
     this.logger = ctx.logger;
     this.accessService = ctx.accessService;
+    this.http = ctx.http;
   }
 
   async getAccess<T = any>(accessId: string) {
@@ -166,7 +187,7 @@ export abstract class AbstractTaskPlugin implements ITaskPlugin {
     return;
   }
 
-  abstract execute(): Promise<void>;
+  abstract execute(): Promise<void | string>;
 
   appendTimeSuffix(name?: string) {
     if (name == null) {

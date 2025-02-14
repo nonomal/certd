@@ -1,4 +1,4 @@
-import _ from "lodash-es";
+import * as _ from "lodash-es";
 
 const propertyMap: any = {};
 function attachProperty(target: any, propertyKey: string | symbol) {

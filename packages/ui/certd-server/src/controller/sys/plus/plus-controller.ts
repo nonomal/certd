@@ -1,6 +1,5 @@
 import { ALL, Body, Controller, Inject, Post, Provide } from '@midwayjs/core';
 import { BaseController, PlusService, SysInstallInfo, SysSettingsService } from '@certd/lib-server';
-import { AppKey, logger } from '@certd/pipeline';
 
 /**
  */
@@ -15,24 +14,9 @@ export class SysPlusController extends BaseController {
 
   @Post('/active', { summary: 'sys:settings:edit' })
   async active(@Body(ALL) body) {
-    const { code } = body;
-    const installInfo: SysInstallInfo = await this.sysSettingsService.getSetting(SysInstallInfo);
-    const siteId = installInfo.siteId;
-    const formData = {
-      appKey: AppKey,
-      code,
-      subjectId: siteId,
-    };
+    const { code, inviteCode } = body;
 
-    const res: any = await this.plusService.active(formData);
-
-    if (res.code > 0) {
-      logger.error('激活失败', res.message);
-      return this.fail(res.message, 1);
-    }
-    const license = res.data.license;
-
-    await this.plusService.updateLicense(license);
+    await this.plusService.active(code, inviteCode);
 
     return this.ok(true);
   }
@@ -40,8 +24,9 @@ export class SysPlusController extends BaseController {
   async bindUrl(@Body(ALL) body: { url: string }) {
     const { url } = body;
 
+    await this.plusService.register();
     const installInfo: SysInstallInfo = await this.sysSettingsService.getSetting(SysInstallInfo);
-    await this.plusService.bindUrl(installInfo.siteId, url);
+    await this.plusService.bindUrl(url);
 
     installInfo.bindUrl = url;
     await this.sysSettingsService.saveSetting(installInfo);
@@ -50,6 +35,12 @@ export class SysPlusController extends BaseController {
     await this.plusService.verify();
 
     return this.ok(true);
+  }
+
+  @Post('/getVipTrial', { summary: 'sys:settings:edit' })
+  async getVipTrial(@Body(ALL) body) {
+    const res = await this.plusService.getVipTrial();
+    return this.ok(res);
   }
   //
   // @Get('/test', { summary: Constants.per.guest })

@@ -1,6 +1,6 @@
 import { AbstractTaskPlugin, IsTaskPlugin, pluginGroups, RunStrategy, TaskInput, TaskOutput } from '@certd/pipeline';
-import { AliyunAccess } from '@certd/plugin-plus';
-import { AliyunSslClient } from '@certd/plugin-plus';
+import { AliyunAccess } from '@certd/plugin-lib';
+import { AliyunSslClient } from '@certd/plugin-lib';
 
 /**
  * 华东1（杭州）	cn-hangzhou	cas.aliyuncs.com	cas-vpc.cn-hangzhou.aliyuncs.com
@@ -23,7 +23,7 @@ const regionDict = [
 
 @IsTaskPlugin({
   name: 'uploadCertToAliyun',
-  title: '上传证书到阿里云',
+  title: '阿里云-上传证书到阿里云',
   icon: 'ant-design:aliyun-outlined',
   group: pluginGroups.aliyun.key,
   desc: '如果不想在阿里云上同一份证书上传多次，可以把此任务作为前置任务，其他阿里云任务证书那一项选择此任务的输出',

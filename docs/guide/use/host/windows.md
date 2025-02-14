@@ -25,3 +25,15 @@ win+R  弹出运行对话框，输入 services.msc 打开服务管理器
 C:\Users\xxxxx>
           ↑↑↑↑---------这个就是windows ssh的登录用户名
 ```
+
+### 4. 切换默认shell终端
+安装openssh后，默认终端是cmd，建议切换成powershell
+```shell
+# powershell中执行如下命令切换
+# 设置默认shell为powershell 【推荐】
+New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force
+
+# 恢复默认shell为cmd 【不推荐】
+New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\cmd.exe" -PropertyType String -Force
+
+```

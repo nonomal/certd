@@ -13,7 +13,7 @@ import { LRUCache } from 'lru-cache';
  * 角色
  */
 @Provide()
-@Scope(ScopeEnum.Singleton)
+@Scope(ScopeEnum.Request, { allowDowngrade: true })
 export class RoleService extends BaseService<RoleEntity> {
   @InjectEntityModel(RoleEntity)
   repository: Repository<RoleEntity>;
@@ -135,5 +135,6 @@ export class RoleService extends BaseService<RoleEntity> {
     if (urs.length > 0) {
       throw new Error('该角色已被用户使用，无法删除');
     }
+    await this.deleteWhere({ id: In(idArr) });
   }
 }

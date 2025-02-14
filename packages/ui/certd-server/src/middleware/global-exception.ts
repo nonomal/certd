@@ -1,6 +1,6 @@
 import { Provide } from '@midwayjs/core';
-import { IWebMiddleware, IMidwayKoaContext, NextFunction } from '@midwayjs/koa';
-import { logger } from '@certd/pipeline';
+import { IMidwayKoaContext, IWebMiddleware, NextFunction } from '@midwayjs/koa';
+import { logger } from '@certd/basic';
 import { Result } from '@certd/lib-server';
 
 @Provide()

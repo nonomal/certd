@@ -2,10 +2,10 @@ import { IsTaskPlugin, pluginGroups, RunStrategy, TaskInput } from '@certd/pipel
 import fs from 'fs';
 import path from 'path';
 import dayjs from 'dayjs';
-import { SshAccess, SshClient } from '../../plugin-host/index.js';
 import { AbstractPlusTaskPlugin } from '@certd/plugin-plus';
 import JSZip from 'jszip';
 import * as os from 'node:os';
+import { SshAccess, SshClient } from '@certd/plugin-lib';
 
 const defaultBackupDir = 'certd_backup';
 const defaultFilePrefix = 'db-backup';
@@ -80,6 +80,18 @@ export class DBBackupPlugin extends AbstractPlusTaskPlugin {
   filePrefix: string = defaultFilePrefix;
 
   @TaskInput({
+    title: '附加上传文件',
+    value: true,
+    component: {
+      name: 'a-switch',
+      vModel: 'checked',
+      placeholder: `是否备份上传的头像等文件`,
+    },
+    required: false,
+  })
+  withUpload = true;
+
+  @TaskInput({
     title: '删除过期备份',
     component: {
       name: 'a-input-number',
@@ -101,7 +113,6 @@ export class DBBackupPlugin extends AbstractPlusTaskPlugin {
       this.logger.error('数据库文件不存在：', dbPath);
       return;
     }
-
     const dbTmpFilename = `${this.filePrefix}.${dayjs().format('YYYYMMDD.HHmmss')}.sqlite`;
     const dbZipFilename = `${dbTmpFilename}.zip`;
     const tempDir = path.resolve(os.tmpdir(), 'certd_backup');
@@ -118,6 +129,12 @@ export class DBBackupPlugin extends AbstractPlusTaskPlugin {
     const stream = fs.createReadStream(dbTmpPath);
     // 使用流的方式添加文件内容
     zip.file(dbTmpFilename, stream, { binary: true, compression: 'DEFLATE' });
+
+    const uploadDir = path.resolve('data', 'upload');
+    if (this.withUpload && fs.existsSync(uploadDir)) {
+      zip.folder(uploadDir);
+    }
+
     const content = await zip.generateAsync({ type: 'nodebuffer' });
 
     await fs.promises.writeFile(dbZipPath, content);
